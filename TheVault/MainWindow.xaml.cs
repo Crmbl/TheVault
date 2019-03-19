@@ -1,8 +1,5 @@
-﻿using System;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Windows;
+﻿using System.Windows;
+using System.Windows.Controls;
 
 namespace TheVault
 {
@@ -16,14 +13,10 @@ namespace TheVault
             InitializeComponent();
         }
 
-        private void StartServer(object sender, RoutedEventArgs e)
+        private void LoginControl_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            AsynchronousSocketListener.StartListening();
-        }
-
-        private void SendMessage(object sender, RoutedEventArgs e)
-        {
-            
+            if (sender is UserControl loginControl && loginControl.Visibility == Visibility.Collapsed)
+                MainControl.Visibility = Visibility.Visible;
         }
     }
 }
