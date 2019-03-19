@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Style="{StaticResource MainWindow}">
     <Grid>
-        <views:LoginUserControl x:Name="LoginControl" IsVisibleChanged="LoginControl_IsVisibleChanged"/>
-        <views:MainUserControl x:Name="MainControl" Visibility="Collapsed"/>
+        <views:LoginUserControl x:Name="LoginControl" IsVisibleChanged="LoginControl_IsVisibleChanged" />
+        <views:MainUserControl x:Name="MainControl" Visibility="Collapsed" />
     </Grid>
 </Window>

@@ -1,4 +1,6 @@
-﻿using TheVault.Utils;
+﻿using System.Collections.Generic;
+using TheVault.Objects;
+using TheVault.Utils;
 
 namespace TheVault.ViewModels
 {
@@ -10,11 +12,23 @@ namespace TheVault.ViewModels
 
         private string _destinationPath;
 
+        private string _vaultPath;
+
         private string _serverMessage;
+
+        private string _passValue;
+
+        private string _saltValue;
 
         private RelayCommand _openOriginFolder;
 
         private RelayCommand _openDestinationFolder;
+
+        private List<VaultFile> _cryptedFiles;
+
+        private List<VaultFile> _decryptedFiles;
+
+        private bool _decryptAll;
 
         #endregion //Instance variables
 
@@ -42,6 +56,17 @@ namespace TheVault.ViewModels
             }
         }
 
+        public string VaultPath
+        {
+            get => _vaultPath;
+            set
+            {
+                if (_vaultPath == value) return;
+                _vaultPath = value;
+                NotifyPropertyChanged("VaultPath");
+            }
+        }
+
         public string ServerMessage
         {
             get => _serverMessage;
@@ -50,6 +75,28 @@ namespace TheVault.ViewModels
                 if (_serverMessage == value) return;
                 _serverMessage = value;
                 NotifyPropertyChanged("ServerMessage");
+            }
+        }
+
+        public string SaltValue
+        {
+            get => _saltValue;
+            set
+            {
+                if (_saltValue == value) return;
+                _saltValue = value;
+                NotifyPropertyChanged("SaltValue");
+            }
+        }
+
+        public string PassValue
+        {
+            get => _passValue;
+            set
+            {
+                if (_passValue == value) return;
+                _passValue = value;
+                NotifyPropertyChanged("PassValue");
             }
         }
 
@@ -75,14 +122,49 @@ namespace TheVault.ViewModels
             }
         }
 
+        public List<VaultFile> CryptedFiles
+        {
+            get => _cryptedFiles;
+            set
+            {
+                if (_cryptedFiles == value) return;
+                _cryptedFiles = value;
+                NotifyPropertyChanged("CryptedFiles");
+            }
+        }
+
+        public List<VaultFile> DecryptedFiles
+        {
+            get => _decryptedFiles;
+            set
+            {
+                if (_decryptedFiles == value) return;
+                _decryptedFiles = value;
+                NotifyPropertyChanged("DecryptedFiles");
+            }
+        }
+
+        public bool DecryptedAll
+        {
+            get => _decryptAll;
+            set
+            {
+                if (_decryptAll == value) return;
+                _decryptAll = value;
+                NotifyPropertyChanged("DecryptedAll");
+            }
+        }
+
         #endregion //Properties
 
         public MainViewModel()
         {
             //TODO REMOVE
-            OriginPath = @"C:\Users\SCHAEFAX\Documents\Perso\Testing\Origin";
-            DestinationPath = @"C:\Users\SCHAEFAX\Documents\Perso\Testing\Destination";
+            OriginPath = @"C:\Users\axels\Downloads\Origin";
+            DestinationPath = @"C:\Users\axels\Downloads\Destination";
             ServerMessage = "Lorem ipsum sit amet bla blabla";
+            DecryptedFiles = new List<VaultFile>();
+            CryptedFiles = new List<VaultFile>();
         }
     }
 }

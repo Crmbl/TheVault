@@ -69,8 +69,6 @@
 
         <Style x:Key="SendButton" TargetType="Button"
                BasedOn="{StaticResource MaterialDesignRaisedButton}">
-
-            <Setter Property="Foreground" Value="#ffffff" />
             <Setter Property="Padding" Value="8,2"/>
             <Setter Property="TextBlock.FontSize" Value="12"/>
             <Setter Property="Height" Value="20"/>

@@ -16,7 +16,10 @@ namespace TheVault
         private void LoginControl_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             if (sender is UserControl loginControl && loginControl.Visibility == Visibility.Collapsed)
+            {
                 MainControl.Visibility = Visibility.Visible;
+                MainControl.Init();
+            }
         }
     }
 }

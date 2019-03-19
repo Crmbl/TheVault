@@ -30,13 +30,13 @@
             <Button Grid.Row="0" Grid.Column="0"
                     x:Name="OpenFolderOrigin"
                     Style="{StaticResource FolderButton}"
-                    Margin="2,2,5,1"
+                    Margin="5,5,5,1"
                     Command="{Binding OpenOriginFolder}"
                     Content="OPEN"/>
 
             <TextBox Grid.Row="0" Grid.Column="1" 
                      x:Name="OriginPath"
-                     Margin="0,2,5,1"
+                     Margin="0,5,5,1"
                      Text="{Binding OriginPath}"
                      materialDesign:HintAssist.Hint="Path to origin folder">
 
@@ -45,48 +45,51 @@
             <Button Grid.Row="1" Grid.Column="0"
                     x:Name="OpenFolderDestination"
                     Style="{StaticResource FolderButton}"
-                    Margin="2,1,5,2"
+                    Margin="5,1,5,5"
                     Command="{Binding OpenDestinationFolder}"
                     Content="OPEN"/>
             
             <TextBox Grid.Row="1" Grid.Column="1"  
                      x:Name="DestinationPath"
-                     Margin="0,1,5,2"
+                     Margin="0,1,5,5"
                      Text="{Binding DestinationPath}"
                      materialDesign:HintAssist.Hint="Path to destination folder">
 
             </TextBox>
         </Grid>
 
-        <ListView Grid.Row="1" Grid.Column="0"
-            ItemsSource="{Binding Items1}">
+        <ListView Grid.Row="1" Grid.Column="0" ItemsSource="{Binding DecryptedFiles}">
             <ListView.View>
                 <GridView>
+                    <GridViewColumn>
+                        <CheckBox IsChecked="{Binding DecryptedAll, Mode=TwoWay}" />
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                     <GridViewColumn
-                        DisplayMemberBinding="{Binding Code}"
-                        Header="Code" />
+                        DisplayMemberBinding="{Binding FileName}"
+                        Header="Filename" />
                     <GridViewColumn
-                        DisplayMemberBinding="{Binding Name}"
-                        Header="Name" />
-                    <GridViewColumn
-                        DisplayMemberBinding="{Binding Description}"
-                        Header="Description" />
+                        DisplayMemberBinding="{Binding Path}"
+                        Header="Path" />
                 </GridView>
             </ListView.View>
         </ListView>
-        <ListView Grid.Row="1" Grid.Column="1"
-                  ItemsSource="{Binding Items1}">
+        <ListView Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CryptedFiles}">
             <ListView.View>
                 <GridView>
                     <GridViewColumn
-                        DisplayMemberBinding="{Binding Code}"
-                        Header="Code" />
+                        DisplayMemberBinding="{Binding IsSelected}"
+                        Header="Selected" />
                     <GridViewColumn
-                        DisplayMemberBinding="{Binding Name}"
-                        Header="Name" />
+                        DisplayMemberBinding="{Binding FileName}"
+                        Header="Filename" />
                     <GridViewColumn
-                        DisplayMemberBinding="{Binding Description}"
-                        Header="Description" />
+                        DisplayMemberBinding="{Binding Path}"
+                        Header="Path" />
                 </GridView>
             </ListView.View>
         </ListView>
@@ -101,13 +104,13 @@
             <Button Grid.Column="0"
                     x:Name="StartServer"
                     Style="{StaticResource ServerButton}"
-                    Margin="2,2,5,2"
+                    Margin="5,5,5,5"
                     Content="START SERVER"/>
 
             <Button Grid.Column="1"
                     x:Name="SendData"
                     Style="{StaticResource SendButton}"
-                    Margin="0,2,5,2"
+                    Margin="0,5,5,5"
                     Content="SEND DATA"/>
 
             <TextBlock Grid.Column="2" 

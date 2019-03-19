@@ -41,8 +41,12 @@
     <Reference Include="MaterialDesignThemes.Wpf, Version=2.4.1.1101, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\MaterialDesignThemes.2.4.1.1101\lib\net45\MaterialDesignThemes.Wpf.dll</HintPath>
     </Reference>
+    <Reference Include="MediaToolkit, Version=1.1.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MediaToolkit.1.1.0.1\lib\net40\MediaToolkit.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -61,7 +65,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Objects\FileObject.cs" />
+    <Compile Include="Objects\FolderObject.cs" />
+    <Compile Include="Objects\VaultFile.cs" />
     <Compile Include="Properties\Annotations.cs" />
+    <Compile Include="Utils\EncryptionUtil.cs" />
+    <Compile Include="Utils\FileUtil.cs" />
     <Compile Include="Utils\RelayCommand.cs" />
     <Compile Include="ViewModels\BaseViewModel.cs" />
     <Compile Include="ViewModels\LoginViewModel.cs" />
