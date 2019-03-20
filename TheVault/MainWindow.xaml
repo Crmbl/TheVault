@@ -8,6 +8,7 @@
         Style="{StaticResource MainWindow}">
     <Grid>
         <views:LoginUserControl x:Name="LoginControl" IsVisibleChanged="LoginControl_IsVisibleChanged" />
+        <views:LoadingUserControl x:Name="LoadingControl" Visibility="Collapsed" IsVisibleChanged="LoadingControl_IsVisibleChanged" />
         <views:MainUserControl x:Name="MainControl" Visibility="Collapsed" />
     </Grid>
 </Window>

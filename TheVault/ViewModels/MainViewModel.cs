@@ -160,8 +160,6 @@ namespace TheVault.ViewModels
         public MainViewModel()
         {
             //TODO REMOVE
-            OriginPath = @"C:\Users\axels\Downloads\Origin";
-            DestinationPath = @"C:\Users\axels\Downloads\Destination";
             ServerMessage = "Lorem ipsum sit amet bla blabla";
             DecryptedFiles = new List<VaultFile>();
             CryptedFiles = new List<VaultFile>();

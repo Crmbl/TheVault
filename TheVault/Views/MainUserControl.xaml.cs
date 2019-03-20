@@ -28,21 +28,21 @@ namespace TheVault.Views
             viewModel.OpenOriginFolder = new RelayCommand(true, c => OpenOriginFolder());
             viewModel.OpenDestinationFolder = new RelayCommand(true, c => OpenDestinationFolder());
 
-            if (!File.Exists($"{Environment.CurrentDirectory}\\settings"))
-                throw new Exception("ERROR ERROR ERROR ALERT ALERT!!!");
+            //if (!File.Exists($"{Environment.CurrentDirectory}\\settings"))
+            //    throw new Exception("ERROR ERROR ERROR ALERT ALERT!!!");
             //TODO add button to set the folders (in settings file) and refresh the viewModel.Lists
-            var lines = File.ReadAllLines($"{Environment.CurrentDirectory}\\settings");
-            viewModel.OriginPath = lines.First();
-            viewModel.DestinationPath = lines[1];
-            viewModel.VaultPath = lines[2];
-            viewModel.PassValue = lines[3];
-            viewModel.SaltValue = lines.Last();
+            //var lines = File.ReadAllLines($"{Environment.CurrentDirectory}\\settings");
+            //viewModel.OriginPath = lines.First();
+            //viewModel.DestinationPath = lines[1];
+            //viewModel.VaultPath = lines[2];
+            //viewModel.PassValue = lines[3];
+            //viewModel.SaltValue = lines.Last();
             
-            //TODO need decryptloading page while decrypting all files in Vault folder to Origin folder
+            ////TODO need decryptloading page while decrypting all files in Vault folder to Origin folder
 
-            var files = new DirectoryInfo(viewModel.OriginPath).GetFiles("*", SearchOption.AllDirectories);
-            foreach(var file in files) //TODO REMOVE HARDCODED VALUE
-                viewModel.DecryptedFiles.Add(new VaultFile(false, file.Name, file.DirectoryName.Remove(0, 25)));
+            //var files = new DirectoryInfo(viewModel.OriginPath).GetFiles("*", SearchOption.AllDirectories);
+            //foreach(var file in files) //TODO REMOVE HARDCODED VALUE
+            //    viewModel.DecryptedFiles.Add(new VaultFile(false, file.Name, file.DirectoryName.Remove(0, 25)));
         }
 
         #region Methods
