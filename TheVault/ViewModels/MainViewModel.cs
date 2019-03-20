@@ -107,7 +107,7 @@ namespace TheVault.ViewModels
             {
                 if (_openOriginFolder == value) return;
                 _openOriginFolder = value;
-                NotifyPropertyChanged("ConnectCommand");
+                NotifyPropertyChanged("OpenOriginFolder");
             }
         }
 

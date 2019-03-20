@@ -5,6 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:TheVault.Views"
         mc:Ignorable="d"
+        Height="450"
+        Width="600"
         Style="{StaticResource MainWindow}">
     <Grid>
         <views:LoginUserControl x:Name="LoginControl" IsVisibleChanged="LoginControl_IsVisibleChanged" />

@@ -22,7 +22,7 @@
                      Style="{StaticResource LoadingProgress}"
                      Minimum="0"
                      Maximum="{Binding FilesToTreat}"
-                     x:Name="DeterminateCircularProgress" />
+                     x:Name="LoadingProgressBar" />
 
         <TextBlock Grid.Row="2" Grid.Column="1"
                    x:Name="LoadingMessage"

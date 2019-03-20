@@ -1,4 +1,6 @@
-﻿namespace TheVault.ViewModels
+﻿using TheVault.Utils;
+
+namespace TheVault.ViewModels
 {
     public class LoadingViewModel : BaseViewModel
     {
