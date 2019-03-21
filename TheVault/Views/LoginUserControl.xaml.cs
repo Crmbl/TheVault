@@ -29,7 +29,7 @@ namespace TheVault.Views
             {
                 ConnectButton.Style = Application.Current.Resources["ErrorButton"] as Style;
                 viewModel.SetErrorConnectString();
-                Task.Delay(1000).ContinueWith(t =>
+                Task.Delay(1000).ContinueWith(_ =>
                 {
                     ConnectButton.Dispatcher.Invoke(() => ConnectButton.Style = Application.Current.FindResource("ConnectButton") as Style);
                     viewModel.SetDefaultConnectString();

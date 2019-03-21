@@ -2,6 +2,10 @@
 
 namespace TheVault.Objects
 {
+    // TODO MAKE IT FLATTTT 
+    // => Folder has -List<FileObject>
+    //               -Name
+    //               -FullPathFromOriginUntilParent
     public class FolderObject
     {
         public string Name { get; set; }

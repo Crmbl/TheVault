@@ -98,17 +98,18 @@ namespace TheVault.ViewModels
             var salt = lines[5];
             FilesToTreat = vaultDir.GetFiles("*", SearchOption.AllDirectories).Length;
 
-            if (FilesToTreat == 0)
-            {
+            /*if (FilesToTreat == 0)
+            {*/
                 Message = $"{ProgressValue} files processed - 100%";
                 DecryptFinished.Execute(null);
-            }
+            /*}
             else
             {
-                await Task.Run(() => {
+                await Task.Run(() =>
+                {
                     var mappingFile = vaultDir.GetFiles().FirstOrDefault(f => EncryptionUtil.Decipher(f.Name, 10) == "mapping.json");
                     if (mappingFile == null) throw new Exception("Mapping file not found.");
-            
+
                     //Decrypt mapping file
                     var mBytes = File.ReadAllBytes($"{mappingFile.FullName}");
                     var mFile = EncryptionUtil.DecryptBytes(mBytes, password, salt);
@@ -127,19 +128,17 @@ namespace TheVault.ViewModels
 
                         if (!Directory.Exists($"{originDir.FullName}{pathToFile}"))
                             Directory.CreateDirectory($"{originDir.FullName}{pathToFile}");
-                
+
                         File.WriteAllBytes($"{originDir.FullName}{pathToFile}\\{result.Last()}", decryptedFile);
                         Message = result.Last();
                         ProgressValue++;
                     }
-                })
-                .ContinueWith(_ =>
-                {
+
                     ProgressValue = FilesToTreat;
                     Message = $"{ProgressValue} files processed - 100%";
                     DecryptFinished.Execute(null);
                 });
-            }
+            }*/
         }
 
         #endregion //Public methods

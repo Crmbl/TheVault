@@ -19,7 +19,7 @@
         </Grid.ColumnDefinitions>
 
         <materialDesign:Card Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
-                             x:Name="TopCard" Padding="3">
+                             x:Name="TopCard" Padding="3" UniformCornerRadius="0">
             <Grid x:Name="TopControls">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -66,7 +66,8 @@
             </Grid>
         </materialDesign:Card>
 
-        <ListView Grid.Row="1" Grid.Column="0" ItemsSource="{Binding DecryptedFiles}">
+        <ListView Grid.Row="1" Grid.Column="0" ItemsSource="{Binding DecryptedFiles}"
+                  Focusable="False">
             <ListView.View>
                 <GridView>
                     <GridViewColumn>
@@ -83,20 +84,27 @@
                     <GridViewColumn
                         DisplayMemberBinding="{Binding Path}"
                         Header="Path" />
+
                 </GridView>
             </ListView.View>
         </ListView>
-        <!--<Canvas x:Name="LeftCanvas" Grid.Row="1" Grid.Column="0" 
-                    Background="{DynamicResource MaterialDesignPaper}">
-                <Grid Width="{Binding ActualWidth, ElementName=LeftCanvas}" 
+        <Canvas x:Name="LeftCanvas" Grid.Row="1" Grid.Column="0"
+                Visibility="{Binding OriginFolderEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"
+                Background="{DynamicResource MaterialDesignPaper}">
+            <Grid Width="{Binding ActualWidth, ElementName=LeftCanvas}" 
                   Height="{Binding ActualHeight, ElementName=LeftCanvas}">
-                <Button Content="TEST" VerticalAlignment="Center" HorizontalAlignment="Center" />    
+                <Button Command="{Binding OpenOriginFolderCmd}"
+                        Content="OPEN ORIGIN FOLDER"
+                        Style="{StaticResource FolderButton}"
+                        VerticalAlignment="Center" 
+                        HorizontalAlignment="Center" />    
             </Grid>
-        </Canvas>-->
+        </Canvas>
         <GridSplitter Grid.Row="1" Grid.Column="1" 
                       Style="{StaticResource GridSplitter}"
                       HorizontalAlignment="Stretch"/>
-        <ListView Grid.Row="1" Grid.Column="2" ItemsSource="{Binding CryptedFiles}">
+        <ListView Grid.Row="1" Grid.Column="2" ItemsSource="{Binding CryptedFiles}"
+                  Focusable="False">
             <ListView.View>
                 <GridView>
                     <GridViewColumn
@@ -112,35 +120,52 @@
             </ListView.View>
         </ListView>
         <Canvas x:Name="RightCanvas" Grid.Row="1" Grid.Column="2" 
+                Visibility="{Binding DestinationFolderEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"
                 Background="{DynamicResource MaterialDesignPaper}">
             <Grid Width="{Binding ActualWidth, ElementName=RightCanvas}" 
                   Height="{Binding ActualHeight, ElementName=RightCanvas}">
-                <Button Content="TEST" VerticalAlignment="Center" HorizontalAlignment="Center" />    
+                <Button Command="{Binding OpenDestinationFolderCmd}"
+                        Content="OPEN DEST FOLDER"
+                        Style="{StaticResource FolderButton}"
+                        VerticalAlignment="Center" 
+                        HorizontalAlignment="Center" />    
             </Grid>
         </Canvas>
         
         <materialDesign:Card Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
-                             x:Name="BottomCard" Padding="3">
+                             x:Name="BottomCard" Padding="3" UniformCornerRadius="0">
             <Grid x:Name="BottomControls">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
                 <Button Grid.Column="0"
+                        x:Name="EncryptData"
+                        Style="{StaticResource EncryptButton}"
+                        Command="{Binding EncryptCmd}"
+                        Margin="5,5,5,5"
+                        Content="ENCRYPT"/>
+
+                <Rectangle Grid.Column="1" Margin="4" Style="{StaticResource Separator}" />
+
+                <Button Grid.Column="2"
                         x:Name="StartServer"
                         Style="{StaticResource ServerButton}"
                         Margin="5,5,5,5"
                         Content="START SERVER"/>
 
-                <Button Grid.Column="1"
+                <Button Grid.Column="3"
                         x:Name="SendData"
                         Style="{StaticResource SendButton}"
                         Margin="0,5,5,5"
                         Content="SEND DATA"/>
 
-                <TextBlock Grid.Column="2" 
+                <TextBlock x:Name="ServerMessageBlock"
+                           Grid.Column="4" 
                            TextAlignment="Right"
                            VerticalAlignment="Center"
                            Margin="0,0,5,0"

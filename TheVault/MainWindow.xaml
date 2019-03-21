@@ -7,7 +7,6 @@
         mc:Ignorable="d"
         Height="450"
         Width="600"
-        
         Style="{StaticResource MainWindow}">
     <Grid>
         <views:LoginUserControl x:Name="LoginControl" IsVisibleChanged="LoginControl_IsVisibleChanged" />

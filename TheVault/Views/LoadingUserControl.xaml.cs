@@ -5,6 +5,9 @@ using TheVault.ViewModels;
 
 namespace TheVault.Views
 {
+    /// <summary>
+    /// Interaction logic for LoadingUserControl.xaml
+    /// </summary>
     public partial class LoadingUserControl
     {
         public LoadingUserControl()
