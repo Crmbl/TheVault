@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:viewModels="clr-namespace:TheVault.ViewModels"
              mc:Ignorable="d">
     <Grid>
         <Grid.RowDefinitions>
@@ -13,57 +14,65 @@
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Grid x:Name="TopControls" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+        <materialDesign:Card Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+                             x:Name="TopCard" Padding="3">
+            <Grid x:Name="TopControls">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-            <Button Grid.Row="0" Grid.Column="0"
-                    x:Name="OpenFolderOrigin"
-                    Style="{StaticResource FolderButton}"
-                    Margin="5,5,5,1"
-                    Command="{Binding OpenOriginFolder}"
-                    Content="OPEN"/>
+                <Button Grid.Row="0" Grid.Column="0"
+                        x:Name="OpenFolderOrigin"
+                        Style="{StaticResource FolderButton}"
+                        Margin="5,5,5,1"
+                        Command="{Binding OpenOriginFolderCmd}"
+                        Content="OPEN"/>
 
-            <TextBox Grid.Row="0" Grid.Column="1" 
-                     x:Name="OriginPath"
-                     Margin="0,5,5,1"
-                     Text="{Binding OriginPath}"
-                     materialDesign:HintAssist.Hint="Path to origin folder">
+                <TextBox Grid.Row="0" Grid.Column="1" 
+                         x:Name="OriginPath"
+                         Margin="0,3,5,0"
+                         Text="{Binding OriginPath}"
+                         materialDesign:HintAssist.Hint="Path to origin folder" />
 
-            </TextBox>
-
-            <Button Grid.Row="1" Grid.Column="0"
-                    x:Name="OpenFolderDestination"
-                    Style="{StaticResource FolderButton}"
-                    Margin="5,1,5,5"
-                    Command="{Binding OpenDestinationFolder}"
-                    Content="OPEN"/>
+                <Button Grid.Row="1" Grid.Column="0"
+                        x:Name="OpenFolderDestination"
+                        Style="{StaticResource FolderButton}"
+                        Margin="5,1,5,5"
+                        Command="{Binding OpenDestinationFolderCmd}"
+                        Content="OPEN"/>
             
-            <TextBox Grid.Row="1" Grid.Column="1"  
-                     x:Name="DestinationPath"
-                     Margin="0,1,5,5"
-                     Text="{Binding DestinationPath}"
-                     materialDesign:HintAssist.Hint="Path to destination folder">
+                <TextBox Grid.Row="1" Grid.Column="1"  
+                         x:Name="DestinationPath"
+                         Margin="0,0,5,4"
+                         Text="{Binding DestinationPath}"
+                         materialDesign:HintAssist.Hint="Path to destination folder" />
 
-            </TextBox>
-        </Grid>
+                <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="2"
+                        x:Name="RefreshOriginFolder"
+                        Style="{StaticResource RefreshButton}"
+                        Margin="0,5,5,5"
+                        Command="{Binding RefreshOriginFolderCmd}"
+                        Content="REFRESH"/>
+            </Grid>
+        </materialDesign:Card>
 
         <ListView Grid.Row="1" Grid.Column="0" ItemsSource="{Binding DecryptedFiles}">
             <ListView.View>
                 <GridView>
                     <GridViewColumn>
-                        <CheckBox IsChecked="{Binding DecryptedAll, Mode=TwoWay}" />
+                        <CheckBox IsChecked="{Binding AllSelected, Mode=TwoWay}" />
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate>
+                            <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
                                 <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
@@ -77,7 +86,17 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <ListView Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CryptedFiles}">
+        <!--<Canvas x:Name="LeftCanvas" Grid.Row="1" Grid.Column="0" 
+                    Background="{DynamicResource MaterialDesignPaper}">
+                <Grid Width="{Binding ActualWidth, ElementName=LeftCanvas}" 
+                  Height="{Binding ActualHeight, ElementName=LeftCanvas}">
+                <Button Content="TEST" VerticalAlignment="Center" HorizontalAlignment="Center" />    
+            </Grid>
+        </Canvas>-->
+        <GridSplitter Grid.Row="1" Grid.Column="1" 
+                      Style="{StaticResource GridSplitter}"
+                      HorizontalAlignment="Stretch"/>
+        <ListView Grid.Row="1" Grid.Column="2" ItemsSource="{Binding CryptedFiles}">
             <ListView.View>
                 <GridView>
                     <GridViewColumn
@@ -92,32 +111,42 @@
                 </GridView>
             </ListView.View>
         </ListView>
+        <Canvas x:Name="RightCanvas" Grid.Row="1" Grid.Column="2" 
+                Background="{DynamicResource MaterialDesignPaper}">
+            <Grid Width="{Binding ActualWidth, ElementName=RightCanvas}" 
+                  Height="{Binding ActualHeight, ElementName=RightCanvas}">
+                <Button Content="TEST" VerticalAlignment="Center" HorizontalAlignment="Center" />    
+            </Grid>
+        </Canvas>
         
-        <Grid x:Name="BottomControls" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+        <materialDesign:Card Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                             x:Name="BottomCard" Padding="3">
+            <Grid x:Name="BottomControls">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
-            <Button Grid.Column="0"
-                    x:Name="StartServer"
-                    Style="{StaticResource ServerButton}"
-                    Margin="5,5,5,5"
-                    Content="START SERVER"/>
+                <Button Grid.Column="0"
+                        x:Name="StartServer"
+                        Style="{StaticResource ServerButton}"
+                        Margin="5,5,5,5"
+                        Content="START SERVER"/>
 
-            <Button Grid.Column="1"
-                    x:Name="SendData"
-                    Style="{StaticResource SendButton}"
-                    Margin="0,5,5,5"
-                    Content="SEND DATA"/>
+                <Button Grid.Column="1"
+                        x:Name="SendData"
+                        Style="{StaticResource SendButton}"
+                        Margin="0,5,5,5"
+                        Content="SEND DATA"/>
 
-            <TextBlock Grid.Column="2" 
-                       TextAlignment="Right"
-                       VerticalAlignment="Center"
-                       Margin="0,0,5,0"
-                       Style="{StaticResource ServerBlock}"
-                       Text="{Binding ServerMessage}" />
-        </Grid>
+                <TextBlock Grid.Column="2" 
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Margin="0,0,5,0"
+                           Style="{StaticResource ServerBlock}"
+                           Text="{Binding ServerMessage}" />
+            </Grid>
+        </materialDesign:Card>
     </Grid>
 </UserControl>

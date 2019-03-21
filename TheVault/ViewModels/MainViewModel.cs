@@ -1,5 +1,9 @@
-﻿using System.Collections.Generic;
-using TheVault.Objects;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Windows;
 using TheVault.Utils;
 
 namespace TheVault.ViewModels
@@ -20,15 +24,17 @@ namespace TheVault.ViewModels
 
         private string _saltValue;
 
-        private RelayCommand _openOriginFolder;
+        private RelayCommand _openOriginFolderCmd;
 
-        private RelayCommand _openDestinationFolder;
+        private RelayCommand _openDestinationFolderCmd;
 
-        private List<VaultFile> _cryptedFiles;
+        private RelayCommand _refreshOriginFolderCmd;
+        
+        private List<FileViewModel> _cryptedFiles;
 
-        private List<VaultFile> _decryptedFiles;
+        private List<FileViewModel> _decryptedFiles;
 
-        private bool _decryptAll;
+        private bool _allSelected;
 
         #endregion //Instance variables
 
@@ -100,29 +106,40 @@ namespace TheVault.ViewModels
             }
         }
 
-        public RelayCommand OpenOriginFolder
+        public RelayCommand OpenOriginFolderCmd
         {
-            get => _openOriginFolder;
+            get => _openOriginFolderCmd;
             set
             {
-                if (_openOriginFolder == value) return;
-                _openOriginFolder = value;
-                NotifyPropertyChanged("OpenOriginFolder");
+                if (_openOriginFolderCmd == value) return;
+                _openOriginFolderCmd = value;
+                NotifyPropertyChanged("OpenOriginFolderCmd");
             }
         }
 
-        public RelayCommand OpenDestinationFolder
+        public RelayCommand OpenDestinationFolderCmd
         {
-            get => _openDestinationFolder;
+            get => _openDestinationFolderCmd;
             set
             {
-                if (_openDestinationFolder == value) return;
-                _openDestinationFolder = value;
-                NotifyPropertyChanged("OpenDestinationFolder");
+                if (_openDestinationFolderCmd == value) return;
+                _openDestinationFolderCmd = value;
+                NotifyPropertyChanged("OpenDestinationFolderCmd");
             }
         }
 
-        public List<VaultFile> CryptedFiles
+        public RelayCommand RefreshOriginFolderCmd
+        {
+            get => _refreshOriginFolderCmd;
+            set
+            {
+                if (_refreshOriginFolderCmd == value) return;
+                _refreshOriginFolderCmd = value;
+                NotifyPropertyChanged("RefreshOriginFolderCmd");
+            }
+        }
+        
+        public List<FileViewModel> CryptedFiles
         {
             get => _cryptedFiles;
             set
@@ -133,7 +150,7 @@ namespace TheVault.ViewModels
             }
         }
 
-        public List<VaultFile> DecryptedFiles
+        public List<FileViewModel> DecryptedFiles
         {
             get => _decryptedFiles;
             set
@@ -144,25 +161,118 @@ namespace TheVault.ViewModels
             }
         }
 
-        public bool DecryptedAll
+        public bool AllSelected
         {
-            get => _decryptAll;
+            get => _allSelected;
             set
             {
-                if (_decryptAll == value) return;
-                _decryptAll = value;
-                NotifyPropertyChanged("DecryptedAll");
+                if (_allSelected == value) return;
+                _allSelected = value;
+                NotifyPropertyChanged("AllSelected");
+                AllSelectedChanged();
             }
         }
 
+        public bool IsItemSelectionChanged { get; set; }
+
         #endregion //Properties
+
+        #region Constructors
 
         public MainViewModel()
         {
+            DecryptedFiles = new List<FileViewModel>();
+            CryptedFiles = new List<FileViewModel>();
+
+            AllSelected = false;
+            var lines = File.ReadAllLines($"{Environment.CurrentDirectory}\\settings");
+            var basePath = lines[0];
+            OriginPath = $"{basePath}\\{lines[1]}";
+            DestinationPath = $"{basePath}\\{lines[2]}";
+            VaultPath = $"{basePath}\\{lines[3]}";
+            PassValue = lines[4];
+            SaltValue = lines[5];
+
+            OpenOriginFolderCmd = new RelayCommand(true, _ => OpenOriginFolder());
+            OpenDestinationFolderCmd = new RelayCommand(true, _ => OpenDestinationFolder());
+            RefreshOriginFolderCmd = new RelayCommand(true, _ => GetOriginFolder(basePath));
+
+            GetOriginFolder(basePath);
+            if (Application.Current.MainWindow != null)
+            {
+                Application.Current.MainWindow.Height = 900;
+                Application.Current.MainWindow.Width = 1200;
+                Application.Current.MainWindow.Closing += OnClose;
+            }
+
             //TODO REMOVE
             ServerMessage = "Lorem ipsum sit amet bla blabla";
-            DecryptedFiles = new List<VaultFile>();
-            CryptedFiles = new List<VaultFile>();
         }
+
+        #endregion //Constructors
+
+        #region Private methods
+
+        private void OnClose(object sender, CancelEventArgs e)
+        {
+            var originFolder = new DirectoryInfo(OriginPath);
+            foreach (var file in originFolder.EnumerateFiles())
+                file.Delete();
+            foreach (var folder in originFolder.EnumerateDirectories())
+                folder.Delete(true);
+
+            var destinationFolder = new DirectoryInfo(DestinationPath);
+            foreach (var file in destinationFolder.EnumerateFiles())
+                file.Delete();
+            foreach (var folder in destinationFolder.EnumerateDirectories())
+                folder.Delete(true);
+        }
+        
+        private void OpenOriginFolder()
+        {
+            if (!string.IsNullOrWhiteSpace(OriginPath) && Directory.Exists(OriginPath))
+                Process.Start(OriginPath);
+        }
+
+        private void OpenDestinationFolder()
+        {
+            if (!string.IsNullOrWhiteSpace(DestinationPath) && Directory.Exists(DestinationPath))
+                Process.Start(DestinationPath);
+        }
+
+        private void AllSelectedChanged()
+        {
+            if (IsItemSelectionChanged)
+            {
+                IsItemSelectionChanged = false;
+                return;
+            }
+
+            if (AllSelected)
+                DecryptedFiles.ForEach(f => f.IsSelected = true);
+            else
+                DecryptedFiles.ForEach(f => f.IsSelected = false);
+        }
+
+        private void ItemSelectionChanged()
+        {
+            if (!AllSelected) return;
+            IsItemSelectionChanged = true;
+            AllSelected = false;
+        }
+
+        private void GetOriginFolder(string basePath)
+        {
+            var files = new DirectoryInfo(OriginPath).GetFiles("*", SearchOption.AllDirectories);
+            DecryptedFiles = new List<FileViewModel>();
+            foreach (var file in files)
+            {
+                var fileViewModel = new FileViewModel(false, file.Name, file.DirectoryName?.Remove(0, basePath.Length));
+                fileViewModel.SelectionChanged = new RelayCommand(true, _ => ItemSelectionChanged());   
+                DecryptedFiles.Add(fileViewModel);
+            }
+        }
+
+        #endregion //Private methods
     }
 }

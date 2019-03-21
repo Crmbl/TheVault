@@ -61,18 +61,18 @@ namespace TheVault.ViewModels
             Username = "TEST";
         }
 
-        #region Methods
+        #region Public methods
 
         public void SetDefaultConnectString()
         {
-            this.ConnectButtonContent = "CONNECT";
+            ConnectButtonContent = "CONNECT";
         }
 
         public void SetErrorConnectString()
         {
-            this.ConnectButtonContent = "ERROR";
+            ConnectButtonContent = "ERROR";
         }
 
-        #endregion //Methods
+        #endregion //Public methods
     }
 }

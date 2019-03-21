@@ -71,6 +71,11 @@
             <Setter Property="materialDesign:ShadowAssist.ShadowDepth" Value="Depth2" />
         </Style>
 
+        <Style x:Key="RefreshButton" TargetType="Button" 
+               BasedOn="{StaticResource FolderButton}">
+            <Setter Property="Height" Value="46"/>
+        </Style>
+
         <Style x:Key="ServerButton" TargetType="Button"
                BasedOn="{StaticResource MaterialDesignRaisedButton}">
             <Setter Property="Background" Value="#b71540" />
@@ -96,6 +101,13 @@
             <Setter Property="Foreground" Value="#badc58"/>
             <Setter Property="FontFamily" Value="Consolas"/>
             <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="GridSplitter" TargetType="GridSplitter"
+               BasedOn="{StaticResource MaterialDesignGridSplitter}">
+            <Setter Property="Width" Value="6" />
+            <Setter Property="Height" Value="Auto" />
+            <Setter Property="materialDesign:ShadowAssist.ShadowDepth" Value="Depth2" />
         </Style>
         <!-- MainControl -->
 

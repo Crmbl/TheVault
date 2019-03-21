@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using TheVault.Utils;
 using TheVault.ViewModels;
 
@@ -9,7 +8,7 @@ namespace TheVault.Views
     /// <summary>
     /// Interaction logic for LoginUserControl.xaml
     /// </summary>
-    public partial class LoginUserControl : UserControl
+    public partial class LoginUserControl
     {
         public LoginUserControl()
         {
@@ -17,9 +16,10 @@ namespace TheVault.Views
             DataContext = new LoginViewModel();
 
             var viewModel = (LoginViewModel) DataContext;
-            viewModel.ConnectCommand = new RelayCommand(true, c => Connect());
+            viewModel.ConnectCommand = new RelayCommand(true, _ => Connect());
         }
 
+        //TODO improve login checkup
         private void Connect()
         {
             if (!(DataContext is LoginViewModel viewModel)) return;

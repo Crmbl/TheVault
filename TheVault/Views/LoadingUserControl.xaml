@@ -16,14 +16,14 @@
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-
+        
         <ProgressBar Grid.Row="1" Grid.Column="1"
+                     x:Name="LoadingProgressBar"
                      Value="{Binding ProgressValue}"
-                     Style="{StaticResource LoadingProgress}"
                      Minimum="0"
-                     Maximum="{Binding FilesToTreat}"
-                     x:Name="LoadingProgressBar" />
-
+                     Style="{StaticResource LoadingProgress}"
+                     Maximum="{Binding FilesToTreat}" />
+          
         <TextBlock Grid.Row="2" Grid.Column="1"
                    x:Name="LoadingMessage"
                    Text="{Binding Message}"
