@@ -93,7 +93,6 @@
     <Compile Include="ViewModels\FileViewModel.cs" />
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Utils\EncryptionUtil.cs" />
-    <Compile Include="Utils\FileUtil.cs" />
     <Compile Include="Utils\RelayCommand.cs" />
     <Compile Include="ViewModels\BaseViewModel.cs" />
     <Compile Include="ViewModels\LoadingViewModel.cs" />

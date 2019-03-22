@@ -66,7 +66,8 @@
             </Grid>
         </materialDesign:Card>
 
-        <ListView Grid.Row="1" Grid.Column="0" ItemsSource="{Binding DecryptedFiles}"
+        <ListView Grid.Row="1" Grid.Column="0" 
+                  ItemsSource="{Binding DecryptedFiles}"
                   Focusable="False">
             <ListView.View>
                 <GridView AllowsColumnReorder="False">
@@ -80,30 +81,12 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn>
-                        <GridViewColumn.HeaderTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="Filename"/>
-                            </DataTemplate>
-                        </GridViewColumn.HeaderTemplate>
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
-                                <TextBlock Text="{Binding FileName}" />
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn>
-                        <GridViewColumn.HeaderTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="Path"/>
-                            </DataTemplate>
-                        </GridViewColumn.HeaderTemplate>
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
-                                <TextBlock Text="{Binding Path}" />
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
+                    <GridViewColumn Width="Auto"
+                                    DisplayMemberBinding="{Binding FileName}"
+                                    Header="Path" />
+                    <GridViewColumn Width="Auto"
+                                    DisplayMemberBinding="{Binding Path}"
+                                    Header="Path" />
                 </GridView>
             </ListView.View>
         </ListView>
@@ -122,16 +105,18 @@
         <GridSplitter Grid.Row="1" Grid.Column="1" 
                       Style="{StaticResource GridSplitter}"
                       HorizontalAlignment="Stretch"/>
-        <ListView Grid.Row="1" Grid.Column="2" ItemsSource="{Binding EncryptedFiles}"
+        <ListView Grid.Row="1" Grid.Column="2" 
+                  x:Name="EncryptedListView"
+                  ItemsSource="{Binding EncryptedFiles}"
                   Focusable="False">
             <ListView.View>
                 <GridView AllowsColumnReorder="False">
-                    <GridViewColumn
-                        DisplayMemberBinding="{Binding FileName}"
-                        Header="Filename" />
-                    <GridViewColumn
-                        DisplayMemberBinding="{Binding SizeMb}"
-                        Header="Size" />
+                    <GridViewColumn Width="Auto"
+                                    DisplayMemberBinding="{Binding FileName}"
+                                    Header="Filename" />
+                    <GridViewColumn Width="Auto"
+                                    DisplayMemberBinding="{Binding SizeMb}"
+                                    Header="Size" />
                 </GridView>
             </ListView.View>
         </ListView>

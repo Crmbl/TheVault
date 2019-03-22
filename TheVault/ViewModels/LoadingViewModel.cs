@@ -150,23 +150,23 @@ namespace TheVault.ViewModels
         /// </summary>
         private string[] GetFileInformation(FolderObject mapping, string fileName)
         {
-            var flattenedTree = new FolderObject(mapping.Name, mapping.FullPath, 
-                new List<FileObject>(mapping.Files), new List<FolderObject>(mapping.Folders));
+            //var flattenedTree = new FolderObject(mapping.Name, mapping.FullPath, 
+            //    new List<FileObject>(mapping.Files), new List<FolderObject>(mapping.Folders));
 
-            for (var i = 0; i < flattenedTree.Folders.Count; i++)
-                flattenedTree.Folders.AddRange(flattenedTree.Folders[i].Folders);
+            //for (var i = 0; i < flattenedTree.Folders.Count; i++)
+            //    flattenedTree.Folders.AddRange(flattenedTree.Folders[i].Folders);
 
-            if (flattenedTree.Files.Any())
-            {
-                foreach(var file in flattenedTree.Files)
-                    if (file.UpdatedName == fileName)
-                        return new []{mapping.FullPath, file.OriginName};
-            }
+            //if (flattenedTree.Files.Any())
+            //{
+            //    foreach(var file in flattenedTree.Files)
+            //        if (file.UpdatedName == fileName)
+            //            return new []{mapping.FullPath, file.OriginName};
+            //}
 
-            foreach (var sub in flattenedTree.Folders)
-            foreach (var file in sub.Files)
-                if (file.UpdatedName == fileName)
-                    return new []{sub.FullPath, file.OriginName};
+            //foreach (var sub in flattenedTree.Folders)
+            //foreach (var file in sub.Files)
+            //    if (file.UpdatedName == fileName)
+            //        return new []{sub.FullPath, file.OriginName};
 
             throw new Exception($"File not found : {fileName}");
         }

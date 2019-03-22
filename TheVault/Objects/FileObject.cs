@@ -7,14 +7,8 @@
         public string Width { get; set; }
         public string Height { get; set; }
 
-        public FileObject() { }
-
-        public FileObject(string originName, string width, string height)
+        public FileObject()
         {
-            OriginName = originName;
-            Width = width;
-            Height = height;
-            Height = height;
         }
     }
 }

@@ -2,10 +2,16 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using MediaToolkit;
+using MediaToolkit.Model;
+using Newtonsoft.Json;
+using TheVault.Objects;
 using TheVault.Utils;
 
 namespace TheVault.ViewModels
@@ -275,7 +281,7 @@ namespace TheVault.ViewModels
 
         #endregion //Constructors
 
-        #region Private static methods
+        #region Events
 
         private void OnChanged(object source, FileSystemEventArgs e)
         {
@@ -292,10 +298,6 @@ namespace TheVault.ViewModels
             else if (e.FullPath.Contains(DestinationPath))
                 GetDestinationFolder();
         }
-
-        #endregion //Private static methods
-
-        #region Private methods
 
         private void OnClose(object sender, CancelEventArgs e)
         {
@@ -320,18 +322,6 @@ namespace TheVault.ViewModels
             foreach (var folder in destinationFolder.EnumerateDirectories())
                 folder.Delete(true);
         }
-        
-        private void OpenOriginFolder()
-        {
-            if (!string.IsNullOrWhiteSpace(OriginPath) && Directory.Exists(OriginPath))
-                Process.Start(OriginPath);
-        }
-
-        private void OpenDestinationFolder()
-        {
-            if (!string.IsNullOrWhiteSpace(DestinationPath) && Directory.Exists(DestinationPath))
-                Process.Start(DestinationPath);
-        }
 
         private void AllSelectedChanged()
         {
@@ -354,6 +344,22 @@ namespace TheVault.ViewModels
             AllSelected = false;
         }
 
+        #endregion //Events
+
+        #region Private methods
+
+        private void OpenOriginFolder()
+        {
+            if (!string.IsNullOrWhiteSpace(OriginPath) && Directory.Exists(OriginPath))
+                Process.Start(OriginPath);
+        }
+
+        private void OpenDestinationFolder()
+        {
+            if (!string.IsNullOrWhiteSpace(DestinationPath) && Directory.Exists(DestinationPath))
+                Process.Start(DestinationPath);
+        }
+
         private void GetOriginFolder()
         {
             var files = new DirectoryInfo(OriginPath).GetFiles("*", SearchOption.AllDirectories);
@@ -368,6 +374,7 @@ namespace TheVault.ViewModels
             NotifyPropertyChanged("OriginFolderEmpty");
         }
 
+        //TODO Columns won't have the good width, always too small :(
         private void GetDestinationFolder()
         {
             var files = new DirectoryInfo(DestinationPath).GetFiles("*", SearchOption.AllDirectories);
@@ -380,13 +387,28 @@ namespace TheVault.ViewModels
             }
 
             NotifyPropertyChanged("DestinationFolderEmpty");
+
+            //TODO put this in event in MainUserControl ! should work for both listview
+            //foreach (var column in EncryptedListView.)
+            //{
+            //    if (double.IsNaN(column.Width))
+            //    {
+            //        column.Width = column.ActualWidth;
+            //    }
+
+            //    column.Width = double.NaN;
+            //}
         }
+
+        #endregion //Private methods
+
+        #region Async methods
 
         private async void EncryptSelected()
         {
-            // TODO Generate new json file !!
             await Task.Run(() =>
             {
+                var mapping = new List<FolderObject>();
                 foreach (var file in DecryptedFiles.Where(f => f.IsSelected))
                 {
                     var filePath = $"{file.Path.Remove(0, OriginPath.Length - BasePath.Length)}";
@@ -399,20 +421,82 @@ namespace TheVault.ViewModels
                     while (File.Exists($"{DestinationPath}\\{EncryptionUtil.Encipher(fileName, 10)}"))
                         fileName = fileName.Replace($"{(i == 0 ? string.Empty : i.ToString())}{ext}", $"{++i}{ext}");
 
-                    //var tmpFile = GetFile(file.Name, dir.Name);
-                    //if (tmpFile == null) continue;
-                    //tmpFile.UpdatedName = fileName;
-
                     var cipheredName = EncryptionUtil.Encipher(fileName, 10);
                     File.WriteAllBytes($"{DestinationPath}\\{cipheredName}", encryptedFile);
                     ServerMessage = file.FileName;
+
+                    var fName = file.Path.Contains("\\") ? file.Path.Split('\\').Last() : file.Path;
+                    var folderObject = mapping.FirstOrDefault(f => f.Name == fName);
+                    if (folderObject == null)
+                    {
+                        folderObject = new FolderObject(fName, file.Path);
+                        mapping.Add(folderObject);
+                    }
+                    
+                    folderObject.Files.Add(new FileObject
+                    {
+                        OriginName = file.FileName,
+                        UpdatedName = fileName
+                    });
                 }
 
+                GetMediaSize(mapping);
                 OnEncryptFinished.Execute(DecryptedFiles.Count(f => f.IsSelected));
                 GetDestinationFolder();
             });
         }
+        
+        private async void GetMediaSize(List<FolderObject> mapping)
+        {
+            await Task.Run(() =>
+            {
+                foreach (var folder in mapping)
+                {
+                    foreach (var file in folder.Files)
+                    {
+                        var fullPathToFile = $"{BasePath}{folder.FullPath}\\{file.OriginName}";
+                        try
+                        {
+                            using (Stream stream = File.OpenRead(fullPathToFile))
+                            {
+                                using (var srcImg = Image.FromStream(stream, false, false))
+                                {
+                                    file.Width = srcImg.Width.ToString();
+                                    file.Height = srcImg.Height.ToString();
+                                }
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            var inputFile = new MediaFile { Filename = fullPathToFile };
+                            using (var engine = new Engine()) { engine.GetMetadata(inputFile); }
 
-        #endregion //Private methods
+                            if (inputFile.Metadata?.VideoData == null) continue;
+                            var size = inputFile.Metadata.VideoData.FrameSize.Split('x');
+                            file.Width = size.First();
+                            file.Height = size.Last();
+                        }
+                    }
+                }
+
+                GenerateJson(mapping);
+            });
+        }
+
+        private async void GenerateJson(List<FolderObject> mapping)
+        {
+            await Task.Run(() =>
+            {
+                var json = JsonConvert.SerializeObject(mapping, Formatting.Indented);
+                var jsonFile = $"{DestinationPath}\\{EncryptionUtil.Encipher("mapping.json", 10)}";
+                File.WriteAllText(jsonFile, json);
+
+                var bytes = Encoding.UTF8.GetBytes(File.ReadAllText(jsonFile));
+                var resultEncrypt = EncryptionUtil.EncryptBytes(bytes, PassValue, SaltValue);
+                File.WriteAllBytes(jsonFile, resultEncrypt);
+            });
+        }
+
+        #endregion //Async methods
     }
 }
