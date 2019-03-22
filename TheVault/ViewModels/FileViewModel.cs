@@ -42,6 +42,8 @@ namespace TheVault.ViewModels
 
         public string Path { get; set; }
 
+        public string SizeMb { get; set; }
+
         #endregion //Properties
 
         #region Constructor
@@ -51,6 +53,12 @@ namespace TheVault.ViewModels
             IsSelected = isSelected;
             FileName = fileName;
             Path = path;
+        }
+
+        public FileViewModel(string fileName, string size)
+        {
+            FileName = fileName;
+            SizeMb = size;
         }
 
         #endregion //Constructors

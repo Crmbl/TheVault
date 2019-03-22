@@ -69,22 +69,41 @@
         <ListView Grid.Row="1" Grid.Column="0" ItemsSource="{Binding DecryptedFiles}"
                   Focusable="False">
             <ListView.View>
-                <GridView>
+                <GridView AllowsColumnReorder="False">
                     <GridViewColumn>
-                        <CheckBox IsChecked="{Binding AllSelected, Mode=TwoWay}" />
+                        <GridViewColumnHeader Style="{StaticResource NoResizeColumnHeader}">
+                            <CheckBox IsChecked="{Binding AllSelected, Mode=TwoWay}" />
+                        </GridViewColumnHeader>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
-                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn
-                        DisplayMemberBinding="{Binding FileName}"
-                        Header="Filename" />
-                    <GridViewColumn
-                        DisplayMemberBinding="{Binding Path}"
-                        Header="Path" />
-
+                    <GridViewColumn>
+                        <GridViewColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="Filename"/>
+                            </DataTemplate>
+                        </GridViewColumn.HeaderTemplate>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
+                                <TextBlock Text="{Binding FileName}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn>
+                        <GridViewColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="Path"/>
+                            </DataTemplate>
+                        </GridViewColumn.HeaderTemplate>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
+                                <TextBlock Text="{Binding Path}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
@@ -103,19 +122,16 @@
         <GridSplitter Grid.Row="1" Grid.Column="1" 
                       Style="{StaticResource GridSplitter}"
                       HorizontalAlignment="Stretch"/>
-        <ListView Grid.Row="1" Grid.Column="2" ItemsSource="{Binding CryptedFiles}"
+        <ListView Grid.Row="1" Grid.Column="2" ItemsSource="{Binding EncryptedFiles}"
                   Focusable="False">
             <ListView.View>
-                <GridView>
-                    <GridViewColumn
-                        DisplayMemberBinding="{Binding IsSelected}"
-                        Header="Selected" />
+                <GridView AllowsColumnReorder="False">
                     <GridViewColumn
                         DisplayMemberBinding="{Binding FileName}"
                         Header="Filename" />
                     <GridViewColumn
-                        DisplayMemberBinding="{Binding Path}"
-                        Header="Path" />
+                        DisplayMemberBinding="{Binding SizeMb}"
+                        Header="Size" />
                 </GridView>
             </ListView.View>
         </ListView>

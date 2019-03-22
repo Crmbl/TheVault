@@ -18,7 +18,7 @@ namespace TheVault.Views
         public void Init()
         {
             DataContext = new MainViewModel();
-            ((MainViewModel) DataContext).OnEncryptFinished = new RelayCommand(true, param => OnEncryptFinished(param));
+            ((MainViewModel) DataContext).OnEncryptFinished = new RelayCommand(true, OnEncryptFinished);
         }
 
         private void OnEncryptFinished(object param)

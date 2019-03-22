@@ -115,7 +115,6 @@
         <Style x:Key="EndServerBlock" TargetType="TextBlock" 
                BasedOn="{StaticResource ServerBlock}">
             <Setter Property="Foreground" Value="#e84118"/>
-            <Setter Property="FontWeight" Value="Bold"/>
         </Style>
 
         <Style x:Key="GridSplitter" TargetType="GridSplitter"
@@ -126,5 +125,132 @@
         </Style>
         <!-- MainControl -->
 
+        <!-- Override default GridViewColumnHeader style to align checkbox in header... -->
+        <Style x:Key="{x:Type GridViewColumnHeader}" TargetType="GridViewColumnHeader">
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="TextBlock.FontWeight" Value="Bold" />
+            <Setter Property="TextBlock.FontSize" Value="14" />
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignPaper}"/>
+            <Setter Property="Background" Value="{DynamicResource MaterialDesignPaper}"/>
+            <Setter Property="Height" Value="45" />
+            <Setter Property="Padding" Value="7,0,0,0" />
+            <Setter Property="Foreground" Value="{DynamicResource MaterialDesignColumnHeader}"/>
+            <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="GridViewColumnHeader">
+                    <DockPanel>
+                        <Thumb x:Name="PART_HeaderGripper"
+                               DockPanel.Dock="Right"
+                               Margin="0,0,-8,0"
+                               Style="{StaticResource MaterialDesignGridColumnHeaderGripper}" />
+                        <Border x:Name="HeaderBorder"
+                                Padding="{TemplateBinding Padding}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter x:Name="HeaderContent"
+                                              Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+
+                        </Border>
+                    </DockPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Role" Value="Floating">
+                <Setter Property="Opacity" Value="0.7" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="GridViewColumnHeader">
+                            <DockPanel Name="PART_FloatingHeaderCanvas">
+                                <Border BorderBrush="{DynamicResource PrimaryHueMidBrush}" BorderThickness="1" />
+                            </DockPanel>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+            <Trigger Property="Role" Value="Padding">
+                <Setter Property="Opacity" Value="0.7" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="GridViewColumnHeader">
+                            <Canvas Name="PART_FloatingHeaderCanvas" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+        </Style.Triggers>
+        </Style>
+
+        <Style x:Key="NoResizeColumnHeader" TargetType="GridViewColumnHeader">
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="TextBlock.FontWeight" Value="Bold" />
+            <Setter Property="TextBlock.FontSize" Value="14" />
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignPaper}"/>
+            <Setter Property="Background" Value="{DynamicResource MaterialDesignPaper}"/>
+            <Setter Property="Height" Value="45" />
+            <Setter Property="Padding" Value="7,0,0,0" />
+            <Setter Property="Foreground" Value="{DynamicResource MaterialDesignColumnHeader}"/>
+            <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="GridViewColumnHeader">
+                    <DockPanel>
+                        <Border x:Name="HeaderBorder"
+                                Padding="{TemplateBinding Padding}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter x:Name="HeaderContent"
+                                              Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+
+                        </Border>
+                    </DockPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Role" Value="Floating">
+                <Setter Property="Opacity" Value="0.7" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="GridViewColumnHeader">
+                            <DockPanel Name="PART_FloatingHeaderCanvas">
+                                <Border BorderBrush="{DynamicResource PrimaryHueMidBrush}" BorderThickness="1" />
+                            </DockPanel>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+            <Trigger Property="Role" Value="Padding">
+                <Setter Property="Opacity" Value="0.7" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="GridViewColumnHeader">
+                            <Canvas Name="PART_FloatingHeaderCanvas" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+        </Style.Triggers>
+        </Style>
+        <!-- Override default style to align checkbox in header... -->
     </Application.Resources>
 </Application>
