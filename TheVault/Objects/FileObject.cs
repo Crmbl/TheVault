@@ -10,5 +10,11 @@
         public FileObject()
         {
         }
+
+        public FileObject(string originName, string updatedName)
+        {
+            OriginName = originName;
+            UpdatedName = updatedName;
+        }
     }
 }

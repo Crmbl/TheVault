@@ -45,7 +45,6 @@
 
         <PasswordBox Grid.Row="3" Grid.Column="2" x:Name="PasswordBox"
             Margin="0,5,0,0"
-            Password="TEST"
             materialDesign:HintAssist.Hint="Password" />
 
         <Button Grid.Row="4" Grid.Column="2" x:Name="ConnectButton"

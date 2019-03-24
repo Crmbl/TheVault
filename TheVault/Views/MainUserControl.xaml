@@ -66,7 +66,6 @@
             </Grid>
         </materialDesign:Card>
 
-        <!-- TODO vertical center ! -->
         <ListView Grid.Row="1" Grid.Column="0" 
                   x:Name="DecryptedListView"
                   ItemsSource="{Binding DecryptedFiles}"
@@ -79,17 +78,16 @@
                         </GridViewColumnHeader>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
-                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                          Height="20"/>
+                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Width="Auto" Header="Filename">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
-                                <TextBlock Text="{Binding FileName}" 
-                                           Height="25"
-                                           VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding FileName}"
+                                           Margin="0,1,0,0"
+                                           Height="17" />
                             </DataTemplate>                            
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -97,7 +95,8 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
                                 <TextBlock Text="{Binding Path}" 
-                                           VerticalAlignment="Center" />
+                                           Margin="0,1,0,0"
+                                           Height="17"/>
                             </DataTemplate>                            
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -129,8 +128,8 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
                                 <TextBlock Text="{Binding FileName}" 
-                                           VerticalAlignment="Center"
-                                           Height="20" />
+                                           Margin="0,1,0,0"
+                                           Height="17" />
                             </DataTemplate>                            
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -138,8 +137,8 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
                                 <TextBlock Text="{Binding SizeMb}" 
-                                           VerticalAlignment="Center"
-                                           Height="20" />
+                                           Margin="0,1,0,0"
+                                           Height="17" />
                             </DataTemplate>                            
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -167,6 +166,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
@@ -177,22 +177,29 @@
                         Margin="5,5,5,5"
                         Content="ENCRYPT"/>
 
-                <Rectangle Grid.Column="1" Margin="4" Style="{StaticResource Separator}" />
+                <Button Grid.Column="1"
+                        x:Name="ClearDestFolder"
+                        Style="{StaticResource SendButton}"
+                        Command="{Binding ClearDestCmd}"
+                        Margin="0,5,5,5"
+                        Content="CLEAR DEST"/>
 
-                <Button Grid.Column="2"
+                <Rectangle Grid.Column="2" Margin="4" Style="{StaticResource Separator}" />
+
+                <Button Grid.Column="3"
                         x:Name="StartServer"
                         Style="{StaticResource ServerButton}"
                         Margin="5,5,5,5"
                         Content="START SERVER"/>
 
-                <Button Grid.Column="3"
+                <Button Grid.Column="4"
                         x:Name="SendData"
                         Style="{StaticResource SendButton}"
                         Margin="0,5,5,5"
                         Content="SEND DATA"/>
 
                 <TextBlock x:Name="ServerMessageBlock"
-                           Grid.Column="4" 
+                           Grid.Column="5" 
                            TextAlignment="Right"
                            VerticalAlignment="Center"
                            Margin="0,0,5,0"

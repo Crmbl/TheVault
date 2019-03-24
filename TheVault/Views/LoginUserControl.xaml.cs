@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Security.Cryptography;
+using System.Threading.Tasks;
 using System.Windows;
 using TheVault.Utils;
 using TheVault.ViewModels;
@@ -19,13 +20,21 @@ namespace TheVault.Views
             viewModel.ConnectCommand = new RelayCommand(true, _ => Connect());
         }
 
-        //TODO improve login checkup
         private void Connect()
         {
             if (!(DataContext is LoginViewModel viewModel)) return;
 
             var password = PasswordBox.Password;
-            if (string.IsNullOrWhiteSpace(viewModel.Username) || string.IsNullOrWhiteSpace(password)) // FAIL
+            var hashPass = "";
+            var hashUser = "";
+            using (MD5 md5Hash = MD5.Create())
+            {
+                hashPass = MD5Util.GetMd5Hash(md5Hash, password);
+                hashUser = MD5Util.GetMd5Hash(md5Hash, viewModel.Username);
+            }
+
+            if (string.IsNullOrWhiteSpace(viewModel.Username) || string.IsNullOrWhiteSpace(password)
+                || hashPass != viewModel.PassCheck.ToLower() || hashUser != viewModel.UserCheck.ToLower())
             {
                 ConnectButton.Style = Application.Current.Resources["ErrorButton"] as Style;
                 viewModel.SetErrorConnectString();
@@ -35,7 +44,7 @@ namespace TheVault.Views
                     viewModel.SetDefaultConnectString();
                 });
             }
-            else // SUCCESS
+            else
             {
                 PasswordBox.Password = "";
                 viewModel.Username = "";

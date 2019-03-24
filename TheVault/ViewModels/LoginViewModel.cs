@@ -4,6 +4,13 @@ namespace TheVault.ViewModels
 {
     public class LoginViewModel : BaseViewModel
     {
+        #region Constants
+
+        public string UserCheck = "";
+        public string PassCheck = "";
+
+        #endregion //Constants
+
         #region Instance Variables
 
         private string _username;
@@ -57,8 +64,6 @@ namespace TheVault.ViewModels
         public LoginViewModel()
         {
             SetDefaultConnectString();
-            //TODO REMOVE (and remove Password value in xaml)
-            Username = "TEST";
         }
 
         #region Public methods
