@@ -1,4 +1,6 @@
-﻿using System.Security.Cryptography;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
 using TheVault.Utils;
@@ -18,6 +20,18 @@ namespace TheVault.Views
 
             var viewModel = (LoginViewModel) DataContext;
             viewModel.ConnectCommand = new RelayCommand(true, _ => Connect());
+
+            /*//TESTING EXTENSIONS
+            var files = new DirectoryInfo("C:\\Users\\axels\\Downloads\\zzzFinal\\_DUMMY\\Test\\Another").GetFiles("*", SearchOption.AllDirectories);
+            var extList = new List<string>();
+            foreach (var file in files)
+            {
+                if (extList.Contains(file.Extension)) continue;
+                extList.Add(file.Extension);
+            }
+
+            File.AppendAllLines("C:\\Users\\axels\\Downloads\\extensions.txt", extList);
+            /**//////////////////////
         }
 
         private void Connect()

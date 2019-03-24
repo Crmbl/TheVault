@@ -16,6 +16,8 @@ using TheVault.Utils;
 
 namespace TheVault.ViewModels
 {
+    //TODO select by default all files : gif/jpg/mp4 ...
+    //disable other critical files to selection but load them either way
     public class MainViewModel : BaseViewModel
     {
         #region Instance variables
@@ -52,7 +54,13 @@ namespace TheVault.ViewModels
 
         private List<FileViewModel> _decryptedFiles;
 
+        private int _progressBarValue;
+
+        private int _progressBarMax;
+
         private bool _allSelected;
+
+        private bool _showProgressBar;
 
         #endregion //Instance variables
 
@@ -121,6 +129,17 @@ namespace TheVault.ViewModels
                 if (_passValue == value) return;
                 _passValue = value;
                 NotifyPropertyChanged("PassValue");
+            }
+        }
+
+        public bool ShowProgressBar
+        {
+            get => _showProgressBar;
+            set
+            {
+                if (_showProgressBar == value) return;
+                _showProgressBar = value;
+                NotifyPropertyChanged("ShowProgressBar");
             }
         }
 
@@ -248,6 +267,28 @@ namespace TheVault.ViewModels
             }
         }
 
+        public int ProgressBarValue
+        {
+            get => _progressBarValue;
+            set
+            {
+                if (_progressBarValue == value) return;
+                _progressBarValue = value;
+                NotifyPropertyChanged("ProgressBarValue");
+            }
+        }
+
+        public int ProgressBarMax
+        {
+            get => _progressBarMax;
+            set
+            {
+                if (_progressBarMax == value) return;
+                _progressBarMax = value;
+                NotifyPropertyChanged("ProgressBarMax");
+            }
+        }
+
         public bool OriginFolderEmpty => !DecryptedFiles.Any();
 
         public bool DestinationFolderEmpty => !EncryptedFiles.Any();
@@ -275,6 +316,7 @@ namespace TheVault.ViewModels
             PassValue = lines[4];
             SaltValue = lines[5];
 
+            ShowProgressBar = false;
             OpenOriginFolderCmd = new RelayCommand(true, _ => OpenOriginFolder());
             OpenDestinationFolderCmd = new RelayCommand(true, _ => OpenDestinationFolder());
             ClearDestCmd = new RelayCommand(true, _ => ClearDestinationFolder());
@@ -369,7 +411,7 @@ namespace TheVault.ViewModels
 
             int jsonFile = originFolder.EnumerateFiles().Any(f => f.Name == "mapping.json") ? 0 : 1;
             var vaultCount = vaultFolder.EnumerateFiles().Count() - jsonFile;
-            var originCount = originFolder.EnumerateFiles().Count();
+            var originCount = originFolder.EnumerateFiles("*", SearchOption.AllDirectories).Count();
             if (vaultCount < originCount)
             {
                 var result = GetMissingFileNames();
@@ -389,7 +431,7 @@ namespace TheVault.ViewModels
                     {
                         foreach (var fileName in result)
                         {
-                            var file = new DirectoryInfo(OriginPath).EnumerateFiles().FirstOrDefault(f => f.Name == fileName);
+                            var file = new DirectoryInfo(OriginPath).EnumerateFiles("*", SearchOption.AllDirectories).FirstOrDefault(f => f.Name == fileName);
                             var fBytes = File.ReadAllBytes(file.FullName);
                             var encryptedFile = EncryptionUtil.EncryptBytes(fBytes, PassValue, SaltValue);
                             var ext = file.Extension;
@@ -440,18 +482,18 @@ namespace TheVault.ViewModels
 
                         GenerateJson(mapping, true);
                         File.Delete($"{VaultPath}\\mapping.json");
-                        foreach (var file in originFolder.EnumerateFiles())
+                        foreach (var file in originFolder.EnumerateFiles("*", SearchOption.AllDirectories))
                             file.Delete();
-                        foreach (var folder in originFolder.EnumerateDirectories())
+                        foreach (var folder in originFolder.EnumerateDirectories("*", SearchOption.AllDirectories))
                             folder.Delete(true);
                     });
                 }
             }
             else
             {
-                foreach (var file in originFolder.EnumerateFiles())
+                foreach (var file in originFolder.EnumerateFiles("*", SearchOption.AllDirectories))
                     file.Delete();
-                foreach (var folder in originFolder.EnumerateDirectories())
+                foreach (var folder in originFolder.EnumerateDirectories("*", SearchOption.AllDirectories))
                     folder.Delete(true);
             }
         }
@@ -527,7 +569,7 @@ namespace TheVault.ViewModels
             var decipheredNames = vaultFolder.EnumerateFiles().Select(x => EncryptionUtil.Decipher(x.Name, 10)).ToList();
             var originFolder = new DirectoryInfo(OriginPath);
             
-            return originFolder.EnumerateFiles().Select(x => x.Name).Except(decipheredNames);
+            return originFolder.EnumerateFiles("*", SearchOption.AllDirectories).Select(x => x.Name).Except(decipheredNames);
         }
 
         private void ClearDestinationFolder()
@@ -548,6 +590,8 @@ namespace TheVault.ViewModels
             await Task.Run(() =>
             {
                 var mapping = new List<FolderObject>();
+                ProgressBarMax = DecryptedFiles.Count(f => f.IsSelected) *2 +1;
+                ShowProgressBar = true;
                 foreach (var file in DecryptedFiles.Where(f => f.IsSelected))
                 {
                     var filePath = $"{file.Path.Remove(0, OriginPath.Length - BasePath.Length)}";
@@ -577,6 +621,8 @@ namespace TheVault.ViewModels
                         OriginName = file.FileName,
                         UpdatedName = fileName
                     });
+
+                    ProgressBarValue++;
                 }
 
                 GetMediaSize(mapping);
@@ -615,6 +661,8 @@ namespace TheVault.ViewModels
                             file.Width = size.First();
                             file.Height = size.Last();
                         }
+
+                        ProgressBarValue++;
                     }
                 }
 
@@ -634,6 +682,7 @@ namespace TheVault.ViewModels
                 var bytes = Encoding.UTF8.GetBytes(File.ReadAllText(jsonFile));
                 var resultEncrypt = EncryptionUtil.EncryptBytes(bytes, PassValue, SaltValue);
                 File.WriteAllBytes(jsonFile, resultEncrypt);
+                ProgressBarValue++;
             });
         }
 

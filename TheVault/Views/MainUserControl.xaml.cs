@@ -30,7 +30,7 @@ namespace TheVault.Views
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                ((MainViewModel) DataContext).ServerMessage = $"{param as string} files processed - 100%";
+                ((MainViewModel)DataContext).ServerMessage = $"{param as string} files processed - 100%";
                 ServerMessageBlock.Style = Application.Current.FindResource("EndServerBlock") as Style;
             });
             Task.Delay(1500).ContinueWith(_ =>
@@ -38,7 +38,8 @@ namespace TheVault.Views
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     ServerMessageBlock.Style = Application.Current.FindResource("ServerBlock") as Style;
-                    ((MainViewModel) DataContext).ServerMessage = "";
+                    ((MainViewModel)DataContext).ServerMessage = "";
+                    ((MainViewModel)DataContext).ShowProgressBar = false;
                 });
             });
         }
