@@ -66,7 +66,9 @@
             </Grid>
         </materialDesign:Card>
 
+        <!-- TODO vertical center ! -->
         <ListView Grid.Row="1" Grid.Column="0" 
+                  x:Name="DecryptedListView"
                   ItemsSource="{Binding DecryptedFiles}"
                   Focusable="False">
             <ListView.View>
@@ -77,16 +79,28 @@
                         </GridViewColumnHeader>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
-                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
+                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                          Height="20"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="Auto"
-                                    DisplayMemberBinding="{Binding FileName}"
-                                    Header="Path" />
-                    <GridViewColumn Width="Auto"
-                                    DisplayMemberBinding="{Binding Path}"
-                                    Header="Path" />
+                    <GridViewColumn Width="Auto" Header="Filename">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
+                                <TextBlock Text="{Binding FileName}" 
+                                           Height="25"
+                                           VerticalAlignment="Center" />
+                            </DataTemplate>                            
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" Header="Path">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
+                                <TextBlock Text="{Binding Path}" 
+                                           VerticalAlignment="Center" />
+                            </DataTemplate>                            
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
@@ -111,12 +125,24 @@
                   Focusable="False">
             <ListView.View>
                 <GridView AllowsColumnReorder="False">
-                    <GridViewColumn Width="Auto"
-                                    DisplayMemberBinding="{Binding FileName}"
-                                    Header="Filename" />
-                    <GridViewColumn Width="Auto"
-                                    DisplayMemberBinding="{Binding SizeMb}"
-                                    Header="Size" />
+                    <GridViewColumn Width="Auto" Header="Filename">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
+                                <TextBlock Text="{Binding FileName}" 
+                                           VerticalAlignment="Center"
+                                           Height="20" />
+                            </DataTemplate>                            
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" Header="Size">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type viewModels:FileViewModel}">
+                                <TextBlock Text="{Binding SizeMb}" 
+                                           VerticalAlignment="Center"
+                                           Height="20" />
+                            </DataTemplate>                            
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>

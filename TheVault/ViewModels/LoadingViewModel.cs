@@ -98,11 +98,11 @@ namespace TheVault.ViewModels
             var salt = lines[5];
             FilesToTreat = vaultDir.GetFiles("*", SearchOption.AllDirectories).Length;
 
-            /*if (FilesToTreat == 0)
-            {*/
+            if (FilesToTreat == 0)
+            {
                 Message = $"{ProgressValue} files processed - 100%";
                 DecryptFinished.Execute(null);
-            /*}
+            }
             else
             {
                 await Task.Run(() =>
@@ -114,7 +114,7 @@ namespace TheVault.ViewModels
                     var mBytes = File.ReadAllBytes($"{mappingFile.FullName}");
                     var mFile = EncryptionUtil.DecryptBytes(mBytes, password, salt);
                     File.WriteAllBytes($"{originDir.FullName}\\mapping.json", mFile);
-                    var mapping = JsonConvert.DeserializeObject<FolderObject>(File.ReadAllText($"{originDir.FullName}\\mapping.json"));
+                    var mapping = JsonConvert.DeserializeObject<List<FolderObject>>(File.ReadAllText($"{originDir.FullName}\\mapping.json"));
                     ProgressValue++;
                     Message = "mapping.json";
 
@@ -122,14 +122,14 @@ namespace TheVault.ViewModels
                     foreach (var file in vaultDir.GetFiles().Where(f => EncryptionUtil.Decipher(f.Name, 10) != "mapping.json"))
                     {
                         var result = GetFileInformation(mapping, EncryptionUtil.Decipher(file.Name, 10));
-                        var pathToFile = $"\\{result.First().Remove(0, originDir.FullName.Length)}";
+                        var pathToFile = result[0];
                         var fBytes = File.ReadAllBytes($"{vaultDir.FullName}\\{file.Name}");
                         var decryptedFile = EncryptionUtil.DecryptBytes(fBytes, password, salt);
 
-                        if (!Directory.Exists($"{originDir.FullName}{pathToFile}"))
-                            Directory.CreateDirectory($"{originDir.FullName}{pathToFile}");
+                        if (!Directory.Exists($"{basePath}\\{pathToFile}"))
+                            Directory.CreateDirectory($"{basePath}\\{pathToFile}");
 
-                        File.WriteAllBytes($"{originDir.FullName}{pathToFile}\\{result.Last()}", decryptedFile);
+                        File.WriteAllBytes($"{basePath}\\{pathToFile}\\{result.Last()}", decryptedFile);
                         Message = result.Last();
                         ProgressValue++;
                     }
@@ -138,7 +138,7 @@ namespace TheVault.ViewModels
                     Message = $"{ProgressValue} files processed - 100%";
                     DecryptFinished.Execute(null);
                 });
-            }*/
+            }
         }
 
         #endregion //Public methods
@@ -148,25 +148,16 @@ namespace TheVault.ViewModels
         /// <summary>
         /// Returns the folder and file originName.
         /// </summary>
-        private string[] GetFileInformation(FolderObject mapping, string fileName)
+        private string[] GetFileInformation(IEnumerable<FolderObject> mapping, string fileName)
         {
-            //var flattenedTree = new FolderObject(mapping.Name, mapping.FullPath, 
-            //    new List<FileObject>(mapping.Files), new List<FolderObject>(mapping.Folders));
-
-            //for (var i = 0; i < flattenedTree.Folders.Count; i++)
-            //    flattenedTree.Folders.AddRange(flattenedTree.Folders[i].Folders);
-
-            //if (flattenedTree.Files.Any())
-            //{
-            //    foreach(var file in flattenedTree.Files)
-            //        if (file.UpdatedName == fileName)
-            //            return new []{mapping.FullPath, file.OriginName};
-            //}
-
-            //foreach (var sub in flattenedTree.Folders)
-            //foreach (var file in sub.Files)
-            //    if (file.UpdatedName == fileName)
-            //        return new []{sub.FullPath, file.OriginName};
+            foreach (var folder in mapping)
+            {
+                foreach (var file in folder.Files)
+                {
+                    if (file.UpdatedName == fileName)
+                        return new []{folder.FullPath, file.OriginName};
+                }
+            }
 
             throw new Exception($"File not found : {fileName}");
         }

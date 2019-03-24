@@ -42,6 +42,10 @@ namespace TheVault.ViewModels
 
         private RelayCommand _onEncryptFinished;
 
+        private RelayCommand _onEncryptListChanged;
+        
+        private RelayCommand _onDecryptListChanged;
+
         private List<FileViewModel> _encryptedFiles;
 
         private List<FileViewModel> _decryptedFiles;
@@ -173,6 +177,28 @@ namespace TheVault.ViewModels
             }
         }
 
+        public RelayCommand OnEncryptListChanged
+        {
+            get => _onEncryptListChanged;
+            set
+            {
+                if (_onEncryptListChanged == value) return;
+                _onEncryptListChanged = value;
+                NotifyPropertyChanged("OnEncryptListChanged");
+            }
+        }
+
+        public RelayCommand OnDecryptListChanged
+        {
+            get => _onDecryptListChanged;
+            set
+            {
+                if (_onDecryptListChanged == value) return;
+                _onDecryptListChanged = value;
+                NotifyPropertyChanged("OnDecryptListChanged");
+            }
+        }
+        
         public List<FileViewModel> EncryptedFiles
         {
             get => _encryptedFiles;
@@ -181,6 +207,7 @@ namespace TheVault.ViewModels
                 if (_encryptedFiles == value) return;
                 _encryptedFiles = value;
                 NotifyPropertyChanged("EncryptedFiles");
+                OnEncryptListChanged?.Execute(null);
             }
         }
 
@@ -192,6 +219,7 @@ namespace TheVault.ViewModels
                 if (_decryptedFiles == value) return;
                 _decryptedFiles = value;
                 NotifyPropertyChanged("DecryptedFiles");
+                OnDecryptListChanged?.Execute(null);
             }
         }
 
@@ -306,20 +334,41 @@ namespace TheVault.ViewModels
             OriginWatcher.EnableRaisingEvents = false;
             OriginWatcher.Dispose();
 
-            // TODO Get all the files from destinationFolder and cut/paste them in Vault folder
-            // TODO Make difference from Vault and Origin and encrypt the missing ones
-            // TODO Delete everything from Origin and Destination Folders
-
-            //var originFolder = new DirectoryInfo(OriginPath);
-            //foreach (var file in originFolder.EnumerateFiles())
-            //    file.Delete();
-            //foreach (var folder in originFolder.EnumerateDirectories())
-            //    folder.Delete(true);
-
+            var vaultFolder = new DirectoryInfo(VaultPath);
             var destinationFolder = new DirectoryInfo(DestinationPath);
-            foreach (var file in destinationFolder.EnumerateFiles())
+            var originFolder = new DirectoryInfo(OriginPath);
+            
+            if (!vaultFolder.EnumerateFiles().Any())
+            {
+                foreach (var file in destinationFolder.EnumerateFiles())
+                    file.MoveTo($"{VaultPath}\\{file.Name}");
+            }
+            else
+            {
+                foreach (var file in destinationFolder.EnumerateFiles())
+                    file.Delete();
+                foreach (var folder in destinationFolder.EnumerateDirectories())
+                    folder.Delete(true);
+            }
+
+            var vaultCount = vaultFolder.EnumerateFiles().Count();
+            var originCount = originFolder.EnumerateFiles().Count();
+            if (vaultCount < originCount)
+            {
+                var result = GetMissingFileNames();
+                if (result.Count() != 0)
+                {
+                    // TODO Make difference from Vault and Origin and encrypt the missing ones
+                    foreach (var fileName in result)
+                    {
+                    
+                    }
+                }
+            }
+            
+            foreach (var file in originFolder.EnumerateFiles())
                 file.Delete();
-            foreach (var folder in destinationFolder.EnumerateDirectories())
+            foreach (var folder in originFolder.EnumerateDirectories())
                 folder.Delete(true);
         }
 
@@ -374,7 +423,6 @@ namespace TheVault.ViewModels
             NotifyPropertyChanged("OriginFolderEmpty");
         }
 
-        //TODO Columns won't have the good width, always too small :(
         private void GetDestinationFolder()
         {
             var files = new DirectoryInfo(DestinationPath).GetFiles("*", SearchOption.AllDirectories);
@@ -387,17 +435,15 @@ namespace TheVault.ViewModels
             }
 
             NotifyPropertyChanged("DestinationFolderEmpty");
+        }
 
-            //TODO put this in event in MainUserControl ! should work for both listview
-            //foreach (var column in EncryptedListView.)
-            //{
-            //    if (double.IsNaN(column.Width))
-            //    {
-            //        column.Width = column.ActualWidth;
-            //    }
-
-            //    column.Width = double.NaN;
-            //}
+        private IEnumerable<string> GetMissingFileNames()
+        {
+            var vaultFolder = new DirectoryInfo(VaultPath);
+            var decipheredNames = vaultFolder.EnumerateFiles().Select(x => EncryptionUtil.Decipher(x.Name, 10)).ToList();
+            var originFolder = new DirectoryInfo(OriginPath);
+            
+            return originFolder.EnumerateFiles().Select(x => x.Name).Except(decipheredNames);
         }
 
         #endregion //Private methods
