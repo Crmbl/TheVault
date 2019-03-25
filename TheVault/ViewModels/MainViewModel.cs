@@ -385,119 +385,14 @@ namespace TheVault.ViewModels
                 GetDestinationFolder();
         }
 
-        //TODO clean this mess
-        private async void OnClose(object sender, CancelEventArgs e)
+        private void OnClose(object sender, CancelEventArgs e)
         {
             DestinationWatcher.EnableRaisingEvents = false;
             DestinationWatcher.Dispose();
             OriginWatcher.EnableRaisingEvents = false;
             OriginWatcher.Dispose();
 
-            var vaultFolder = new DirectoryInfo(VaultPath);
-            var destinationFolder = new DirectoryInfo(DestinationPath);
-            var originFolder = new DirectoryInfo(OriginPath);
-            
-            if (!vaultFolder.EnumerateFiles().Any())
-            {
-                foreach (var file in destinationFolder.EnumerateFiles())
-                    file.MoveTo($"{VaultPath}\\{file.Name}");
-            }
-            else
-            {
-                foreach (var file in destinationFolder.EnumerateFiles())
-                    file.Delete();
-                foreach (var folder in destinationFolder.EnumerateDirectories())
-                    folder.Delete(true);
-            }
-
-            int jsonFile = originFolder.EnumerateFiles().Any(f => f.Name == "mapping.json") ? 0 : 1;
-            var vaultCount = vaultFolder.EnumerateFiles().Count() - jsonFile;
-            var originCount = originFolder.EnumerateFiles("*", SearchOption.AllDirectories).Count();
-            if (vaultCount < originCount)
-            {
-                var result = GetMissingFileNames();
-                if (result.Count() != 0)
-                {
-                    //TODO and if there is not json file ??? For now : ERROR !!!
-                    var json = new DirectoryInfo(VaultPath).EnumerateFiles().FirstOrDefault(f => EncryptionUtil.Decipher(f.Name, 10) == "mapping.json");
-                    var mBytes = File.ReadAllBytes($"{json.FullName}");
-                    var mFile = EncryptionUtil.DecryptBytes(mBytes, PassValue, SaltValue);
-                    File.WriteAllBytes($"{VaultPath}\\mapping.json", mFile);
-                    File.Delete(json.FullName);
-                    var mapping = JsonConvert.DeserializeObject<List<FolderObject>>(File.ReadAllText($"{VaultPath}\\mapping.json"));
-                    var tmpFolder = mapping.FirstOrDefault(f => f.Name == "Origin");
-                    var mappingEntry = tmpFolder.Files.FirstOrDefault(f => f.OriginName == "mapping.json");
-                    tmpFolder.Files.Remove(mappingEntry);
-
-                    await Task.Run(() =>
-                    {
-                        foreach (var fileName in result)
-                        {
-                            var file = new DirectoryInfo(OriginPath).EnumerateFiles("*", SearchOption.AllDirectories).FirstOrDefault(f => f.Name == fileName);
-                            var fBytes = File.ReadAllBytes(file.FullName);
-                            var encryptedFile = EncryptionUtil.EncryptBytes(fBytes, PassValue, SaltValue);
-                            var ext = file.Extension;
-                            var tmpName = file.Name;
-
-                            var i = 0;
-                            while (File.Exists($"{VaultPath}\\{EncryptionUtil.Encipher(tmpName, 10)}"))
-                                tmpName = tmpName.Replace($"{(i == 0 ? string.Empty : i.ToString())}{ext}", $"{++i}{ext}");
-
-                            var cipheredName = EncryptionUtil.Encipher(tmpName, 10);
-                            File.WriteAllBytes($"{VaultPath}\\{cipheredName}", encryptedFile);
-
-                            var folderObject = mapping.FirstOrDefault(f => f.Name == file.Directory.Name);
-                            if (folderObject == null)
-                            {
-                                folderObject = new FolderObject(file.Directory.Name, "");
-                                mapping.Add(folderObject);
-                            }
-
-                            var tmpFile = new FileObject
-                            {
-                                OriginName = file.Name,
-                                UpdatedName = fileName
-                            };
-                            try
-                            {
-                                using (Stream stream = File.OpenRead(file.FullName))
-                                {
-                                    using (var srcImg = Image.FromStream(stream, false, false))
-                                    {
-                                        tmpFile.Width = srcImg.Width.ToString();
-                                        tmpFile.Height = srcImg.Height.ToString();
-                                    }
-                                }
-                            }
-                            catch (Exception)
-                            {
-                                var inputFile = new MediaFile { Filename = file.FullName };
-                                using (var engine = new Engine()) { engine.GetMetadata(inputFile); }
-
-                                if (inputFile.Metadata?.VideoData == null) continue;
-                                var size = inputFile.Metadata.VideoData.FrameSize.Split('x');
-                                tmpFile.Width = size.First();
-                                tmpFile.Height = size.Last();
-                            }
-                            folderObject.Files.Add(tmpFile);
-                        }
-
-                        GenerateJson(mapping, true);
-                        File.Delete($"{VaultPath}\\mapping.json");
-                        foreach (var file in originFolder.EnumerateFiles("*", SearchOption.AllDirectories))
-                            file.Delete();
-                        foreach (var folder in originFolder.EnumerateDirectories("*", SearchOption.AllDirectories))
-                            folder.Delete(true);
-                    });
-                }
-            }
-            else
-            {
-                foreach (var file in originFolder.EnumerateFiles("*", SearchOption.AllDirectories))
-                    file.Delete();
-                foreach (var folder in originFolder.EnumerateDirectories("*", SearchOption.AllDirectories))
-                    folder.Delete(true);
-            }
+            BackupFiles();
         }
 
         private void AllSelectedChanged()
@@ -583,6 +478,121 @@ namespace TheVault.ViewModels
                 folder.Delete(true);
         }
 
+        private void BackupFiles()
+        {
+            var vaultFolder = new DirectoryInfo(VaultPath);
+            var destinationFolder = new DirectoryInfo(DestinationPath);
+            var originFolder = new DirectoryInfo(OriginPath);
+
+            var hasJsonFile = originFolder.EnumerateFiles().Any(f => f.Name == "mapping.json") ? 0 : 1;
+            var vaultCount = vaultFolder.EnumerateFiles().Count() - hasJsonFile;
+            var originCount = originFolder.EnumerateFiles("*", SearchOption.AllDirectories).Count();
+            if (vaultCount < originCount)
+            {
+                if (!vaultFolder.EnumerateFiles().Any())
+                {
+                    foreach (var file in destinationFolder.EnumerateFiles())
+                        file.MoveTo($"{VaultPath}\\{file.Name}");
+                }
+                
+                var result = GetMissingFileNames();
+                if (result.Count() != 0)
+                {
+                    var json = new DirectoryInfo(VaultPath).EnumerateFiles().FirstOrDefault(f => EncryptionUtil.Decipher(f.Name, 10) == "mapping.json");
+                    var mapping = new List<FolderObject>();
+                    if (json != null)
+                    {
+                        var mBytes = File.ReadAllBytes($"{json.FullName}");
+                        var mFile = EncryptionUtil.DecryptBytes(mBytes, PassValue, SaltValue);
+                        File.WriteAllBytes($"{VaultPath}\\mapping.json", mFile);
+                        File.Delete(json.FullName);
+                        
+                        mapping = JsonConvert.DeserializeObject<List<FolderObject>>(File.ReadAllText($"{VaultPath}\\mapping.json"));
+                        var tmpFolder = mapping.FirstOrDefault(f => f.Name == "Origin");
+                        var mappingEntry = tmpFolder?.Files.FirstOrDefault(f => f.OriginName == "mapping.json");
+                        if (mappingEntry != null)
+                            tmpFolder?.Files.Remove(mappingEntry);
+                        
+                        foreach (var fileName in result)
+                        {
+                            var file = new DirectoryInfo(OriginPath)
+                                .EnumerateFiles("*", SearchOption.AllDirectories)
+                                .FirstOrDefault(f => f.Name == fileName);
+                            var fBytes = File.ReadAllBytes(file.FullName);
+                            var encryptedFile = EncryptionUtil.EncryptBytes(fBytes, PassValue, SaltValue);
+                            var ext = file.Extension;
+                            var tmpName = file.Name;
+
+                            var i = 0;
+                            while (File.Exists($"{VaultPath}\\{EncryptionUtil.Encipher(tmpName, 10)}"))
+                                tmpName = tmpName.Replace($"{(i == 0 ? string.Empty : i.ToString())}{ext}", $"{++i}{ext}");
+
+                            var cipheredName = EncryptionUtil.Encipher(tmpName, 10);
+                            File.WriteAllBytes($"{VaultPath}\\{cipheredName}", encryptedFile);
+
+                            var folderObject = mapping.FirstOrDefault(f => f.Name == file.Directory.Name);
+                            if (folderObject == null)
+                            {
+                                folderObject = new FolderObject(file.Directory.Name, "");
+                                mapping.Add(folderObject);
+                            }
+
+                            folderObject.Files.Add(new FileObject
+                            {
+                                OriginName = file.Name,
+                                UpdatedName = fileName
+                            });
+                        }
+                    }
+                    else
+                    {
+                        foreach (var file in DecryptedFiles)
+                        {
+                            var filePath = $"{file.Path.Remove(0, OriginPath.Length - BasePath.Length)}";
+                            var fBytes = File.ReadAllBytes($"{OriginPath}{filePath}\\{file.FileName}");
+                            var encryptedFile = EncryptionUtil.EncryptBytes(fBytes, PassValue, SaltValue);
+                            var ext = file.FileName.Split('.').Last().Insert(0, ".");
+                            var fileName = file.FileName;
+
+                            var i = 0;
+                            while (File.Exists($"{VaultPath}\\{EncryptionUtil.Encipher(fileName, 10)}"))
+                                fileName = fileName.Replace($"{(i == 0 ? string.Empty : i.ToString())}{ext}", $"{++i}{ext}");
+
+                            var cipheredName = EncryptionUtil.Encipher(fileName, 10);
+                            File.WriteAllBytes($"{VaultPath}\\{cipheredName}", encryptedFile);
+                            
+                            var fName = file.Path.Contains("\\") ? file.Path.Split('\\').Last() : file.Path;
+                            var folderObject = mapping.FirstOrDefault(f => f.Name == fName);
+                            if (folderObject == null)
+                            {
+                                folderObject = new FolderObject(fName, file.Path);
+                                mapping.Add(folderObject);
+                            }
+
+                            folderObject.Files.Add(new FileObject
+                            {
+                                OriginName = file.FileName,
+                                UpdatedName = fileName
+                            });
+                        }
+                    }
+                    
+                    // WON'T WORK BECAUSE ASYNC, MUST PUT THIS IN THIS METHOD !!!!!
+                    GetMediaSize(mapping, true);
+                }
+            }
+            
+            foreach (var file in destinationFolder.EnumerateFiles())
+                file.Delete();
+            foreach (var folder in destinationFolder.EnumerateDirectories())
+                folder.Delete(true);
+            
+            foreach (var file in originFolder.EnumerateFiles("*", SearchOption.AllDirectories))
+                file.Delete();
+            foreach (var folder in originFolder.EnumerateDirectories("*", SearchOption.AllDirectories))
+                folder.Delete(true);
+        }
+        
         #endregion //Private methods
 
         #region Async methods
@@ -633,7 +643,7 @@ namespace TheVault.ViewModels
             });
         }
         
-        private async void GetMediaSize(List<FolderObject> mapping)
+        private async void GetMediaSize(List<FolderObject> mapping, bool onClosing = false)
         {
             await Task.Run(() =>
             {
@@ -668,7 +678,7 @@ namespace TheVault.ViewModels
                     }
                 }
 
-                GenerateJson(mapping);
+                GenerateJson(mapping, onClosing);
             });
         }
 
@@ -685,9 +695,12 @@ namespace TheVault.ViewModels
                 var resultEncrypt = EncryptionUtil.EncryptBytes(bytes, PassValue, SaltValue);
                 File.WriteAllBytes(jsonFile, resultEncrypt);
                 ProgressBarValue++;
+                
+                if (onClosing)
+                    File.Delete($"{VaultPath}\\mapping.json");
             });
         }
-
+        
         #endregion //Async methods
     }
 }
