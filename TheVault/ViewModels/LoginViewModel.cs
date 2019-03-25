@@ -6,8 +6,8 @@ namespace TheVault.ViewModels
     {
         #region Constants
 
-        public string UserCheck = "";
-        public string PassCheck = "";
+        public string UserCheck = "098f6bcd4621d373cade4e832627b4f6";
+        public string PassCheck = "098f6bcd4621d373cade4e832627b4f6";
 
         #endregion //Constants
 

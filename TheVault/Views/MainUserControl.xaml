@@ -180,7 +180,7 @@
 
                 <Button Grid.Column="1"
                         x:Name="ClearDestFolder"
-                        Style="{StaticResource SendButton}"
+                        Style="{StaticResource ClearButton}"
                         Command="{Binding ClearDestCmd}"
                         Margin="0,5,5,5"
                         Content="CLEAR DEST"/>

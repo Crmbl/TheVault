@@ -18,6 +18,7 @@ namespace TheVault.ViewModels
 {
     //TODO select by default all files : gif/jpg/mp4 ...
     //disable other critical files to selection but load them either way
+    //Progress bar not working
     public class MainViewModel : BaseViewModel
     {
         #region Instance variables
@@ -417,6 +418,7 @@ namespace TheVault.ViewModels
                 var result = GetMissingFileNames();
                 if (result.Count() != 0)
                 {
+                    //TODO and if there is not json file ??? For now : ERROR !!!
                     var json = new DirectoryInfo(VaultPath).EnumerateFiles().FirstOrDefault(f => EncryptionUtil.Decipher(f.Name, 10) == "mapping.json");
                     var mBytes = File.ReadAllBytes($"{json.FullName}");
                     var mFile = EncryptionUtil.DecryptBytes(mBytes, PassValue, SaltValue);
