@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:viewModels="clr-namespace:TheVault.ViewModels"
+             xmlns:system="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d">
     <Grid>
         <Grid.RowDefinitions>
@@ -17,6 +18,37 @@
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
+        
+        <Canvas x:Name="BackupCanvas" Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="3"
+                Visibility="{Binding BackingUpFiles, Converter={StaticResource BooleanToVisibilityConverter}}"
+                Background="{DynamicResource MaterialDesignPaper}"
+                ZIndex="10">
+            <Grid Width="{Binding ActualWidth, ElementName=BackupCanvas}" 
+                  Height="{Binding ActualHeight, ElementName=BackupCanvas}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ProgressBar Grid.Row="1" Grid.Column="1"
+                             Style="{StaticResource LoadingProgress}"
+                             Minimum="0"
+                             Maximum="{Binding ProgressBarMax}"
+                             Value="{Binding ProgressBarValue}"
+                             VerticalAlignment="Center" 
+                             HorizontalAlignment="Center"/>
+                <TextBlock Grid.Row="2" Grid.Column="1"
+                           Text="Files backup in progress..."
+                           Margin="0,20,0,0"
+                           Style="{StaticResource BackUpMessage}"/>
+            </Grid>
+        </Canvas>
 
         <materialDesign:Card Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
                              x:Name="TopCard" Padding="3" UniformCornerRadius="0">
@@ -212,13 +244,54 @@
                              Grid.Column="6"
                              Height="10"
                              Width="200"
-                             Minimum="0"
                              Foreground="#6c5ce7"
                              Margin="10,0,10,0"
                              Visibility="{Binding ShowProgressBar, Converter={StaticResource BooleanToVisibilityConverter}}"
+                             Minimum="0"
                              Maximum="{Binding ProgressBarMax}"
                              Value="{Binding ProgressBarValue}"/>
             </Grid>
         </materialDesign:Card>
+        
+        <materialDesign:DialogHost Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                        x:Name="Dialog" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <materialDesign:DialogHost.Resources>
+                <Style TargetType="materialDesign:Card" BasedOn="{StaticResource {x:Type materialDesign:Card}}">
+                    <Style.Resources>
+                        <ResourceDictionary>
+                            <ResourceDictionary.MergedDictionaries>
+                                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Dark.xaml" />
+                            </ResourceDictionary.MergedDictionaries>
+                        </ResourceDictionary>
+                    </Style.Resources>
+                    <Setter Property="Background" Value="{DynamicResource MaterialDesignCardBackground}" />
+                </Style>
+            </materialDesign:DialogHost.Resources>
+            <materialDesign:DialogHost.DialogContent>
+                <StackPanel Margin="16">
+                    <TextBlock Style="{StaticResource DialogMessage}">Do you want to exit ?</TextBlock>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" >
+                        <Button Style="{StaticResource DialogOkButton}"
+                            IsDefault="True"
+                            Margin="0,15,8,0"
+                            Command="{Binding CloseDialogCmd}"
+                            Content="ACCEPT">
+                            <Button.CommandParameter>
+                                <system:Boolean>True</system:Boolean>
+                            </Button.CommandParameter>
+                        </Button>
+                        <Button Style="{DynamicResource MaterialDesignFlatButton}"
+                            IsCancel="True"
+                            Margin="0,15,0,0"
+                            Command="{Binding CloseDialogCmd}"
+                            Content="CANCEL">
+                            <Button.CommandParameter>
+                                <system:Boolean>False</system:Boolean>
+                            </Button.CommandParameter>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </materialDesign:DialogHost.DialogContent>
+        </materialDesign:DialogHost>
     </Grid>
 </UserControl>

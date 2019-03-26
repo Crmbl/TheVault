@@ -17,8 +17,8 @@ namespace TheVault
         {
             if (sender is UserControl loginControl && loginControl.Visibility == Visibility.Collapsed)
             {
-                LoadingControl.Visibility = Visibility.Visible;
                 LoadingControl.Init();
+                LoadingControl.Visibility = Visibility.Visible;
             }
         }
 
@@ -26,8 +26,8 @@ namespace TheVault
         {
             if (sender is UserControl loadingControl && loadingControl.Visibility == Visibility.Collapsed)
             {
-                MainControl.Visibility = Visibility.Visible;
                 MainControl.Init();
+                MainControl.Visibility = Visibility.Visible;
             }
         }
     }

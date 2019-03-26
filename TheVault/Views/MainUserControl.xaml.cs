@@ -24,6 +24,12 @@ namespace TheVault.Views
             viewModel.OnEncryptFinished = new RelayCommand(true, OnEncryptFinished);
             viewModel.OnEncryptListChanged = new RelayCommand(true, _ => OnEncryptListChanged());
             viewModel.OnDecryptListChanged = new RelayCommand(true, _ => OnDecryptListChanged());
+            viewModel.OpenDialogCmd = new RelayCommand(true, _ => OnOpenDialog());
+            viewModel.CloseDialogCmd = new RelayCommand(true, param =>
+            {
+                Dialog.IsOpen = false;
+                viewModel.OnCloseDialog(param);
+            });
         }
 
         private void OnEncryptFinished(object param)
@@ -75,6 +81,15 @@ namespace TheVault.Views
 
                     column.Width = double.NaN;
                 }
+            });
+        }
+
+        private void OnOpenDialog()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (!Dialog.IsOpen)
+                    Dialog.IsOpen = true;
             });
         }
     }

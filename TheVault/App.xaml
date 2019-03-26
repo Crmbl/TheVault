@@ -135,6 +135,25 @@
             <Setter Property="Height" Value="Auto" />
             <Setter Property="materialDesign:ShadowAssist.ShadowDepth" Value="Depth2" />
         </Style>
+        
+        <Style x:Key="BackUpMessage" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="#badc58" />
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+        
+        <Style x:Key="DialogOkButton" TargetType="Button"
+               BasedOn="{StaticResource MaterialDesignFlatButton}">
+            <Setter Property="Foreground" Value="#e84118" />
+        </Style>
+        
+        <Style x:Key="DialogMessage" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#badc58"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
         <!-- MainControl -->
 
         <!-- Override default GridViewColumnHeader style to align checkbox in header... -->
