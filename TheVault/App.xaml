@@ -55,6 +55,11 @@
             <Setter Property="FontFamily" Value="Consolas" />
             <Setter Property="FontWeight" Value="Bold" />
         </Style>
+        
+        <Style x:Key="LoadingMessageError" TargetType="TextBlock"
+               BasedOn="{StaticResource LoadingMessage}">
+            <Setter Property="Foreground" Value="#ff4757" />
+        </Style>
         <!-- LoadingControl -->
 
         <!-- MainControl --> 

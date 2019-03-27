@@ -7,6 +7,8 @@ namespace TheVault.ViewModels
         #region Instance variables
 
         private bool _isSelected;
+        
+        private bool _isEnabled;
 
         private RelayCommand _selectionChanged;
 
@@ -21,9 +23,19 @@ namespace TheVault.ViewModels
             {
                 if (_isSelected == value) return;
                 _isSelected = value;
-                if (!value) SelectionChanged.Execute(null);
-
+                SelectionChanged.Execute(null);
                 NotifyPropertyChanged("IsSelected");
+            }
+        }
+
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            set
+            {
+                if (_isEnabled == value) return;
+                _isEnabled = value;
+                NotifyPropertyChanged("IsEnabled");
             }
         }
 
@@ -48,9 +60,10 @@ namespace TheVault.ViewModels
 
         #region Constructor
 
-        public FileViewModel(bool isSelected, string fileName, string path)
+        public FileViewModel(bool isEnabled, string fileName, string path)
         {
-            IsSelected = isSelected;
+            IsSelected = false;
+            IsEnabled = isEnabled;
             FileName = fileName;
             Path = path;
         }

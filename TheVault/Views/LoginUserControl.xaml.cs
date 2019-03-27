@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
 using TheVault.Utils;
@@ -21,17 +19,10 @@ namespace TheVault.Views
             var viewModel = (LoginViewModel) DataContext;
             viewModel.ConnectCommand = new RelayCommand(true, _ => Connect());
 
-            /*//TESTING EXTENSIONS
-            var files = new DirectoryInfo("C:\\Users\\axels\\Downloads\\zzzFinal\\_DUMMY\\Test\\Another").GetFiles("*", SearchOption.AllDirectories);
-            var extList = new List<string>();
-            foreach (var file in files)
-            {
-                if (extList.Contains(file.Extension)) continue;
-                extList.Add(file.Extension);
-            }
-
-            File.AppendAllLines("C:\\Users\\axels\\Downloads\\extensions.txt", extList);
-            /**//////////////////////
+            //TODO TESTING EXTENSIONS
+            //FileUtil.GetFileExtensions(new DirectoryInfo("C:\\Users\\axels\\Downloads\\zzzFinal\\_DUMMY\\Test\\Another"),
+            //"C:\\Users\\axels\\Downloads\\extensions.txt");
+            //////////////////////
         }
 
         private void Connect()
@@ -41,7 +32,7 @@ namespace TheVault.Views
             var password = PasswordBox.Password;
             var hashPass = "";
             var hashUser = "";
-            using (MD5 md5Hash = MD5.Create())
+            using (var md5Hash = MD5.Create())
             {
                 hashPass = MD5Util.GetMd5Hash(md5Hash, password);
                 hashUser = MD5Util.GetMd5Hash(md5Hash, viewModel.Username);

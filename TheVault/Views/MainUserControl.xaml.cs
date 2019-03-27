@@ -25,6 +25,8 @@ namespace TheVault.Views
             viewModel.OnEncryptListChanged = new RelayCommand(true, _ => OnEncryptListChanged());
             viewModel.OnDecryptListChanged = new RelayCommand(true, _ => OnDecryptListChanged());
             viewModel.OpenDialogCmd = new RelayCommand(true, _ => OnOpenDialog());
+            viewModel.DecryptListItemChangedCmd = new RelayCommand(true, viewModel.SortDecryptButtonChanged);
+            viewModel.EncryptListItemChangedCmd = new RelayCommand(true, viewModel.SortEncryptButtonChanged);
             viewModel.CloseDialogCmd = new RelayCommand(true, param =>
             {
                 Dialog.IsOpen = false;
@@ -91,6 +93,20 @@ namespace TheVault.Views
                 if (!Dialog.IsOpen)
                     Dialog.IsOpen = true;
             });
+        }
+
+        private void OnDecryptedListSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var listBox = sender as ListBox;
+            var item = listBox?.SelectedItems.Count > 0 ? listBox?.SelectedItems[0] : null;
+            (DataContext as MainViewModel)?.DecryptListItemChangedCmd.Execute(item);
+        }
+            
+        private void OnEncryptedListSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var listBox = sender as ListBox;
+            var item = listBox?.SelectedItems.Count > 0 ? listBox?.SelectedItems[0] : null;
+            (DataContext as MainViewModel)?.EncryptListItemChangedCmd.Execute(item);
         }
     }
 }

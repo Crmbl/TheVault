@@ -20,17 +20,25 @@ namespace TheVault.Views
             DataContext = new LoadingViewModel();
             
             var viewModel = (LoadingViewModel) DataContext;
-            viewModel.DecryptFinished = new RelayCommand(true, o => OnDecryptFinished());
+            viewModel.DecryptFinished = new RelayCommand(true, OnDecryptFinished);
             viewModel.DecryptFilesAsync();
         }
 
-        private void OnDecryptFinished()
+        private void OnDecryptFinished(object param)
         {
-            Task.Delay(1500).ContinueWith(_ =>
+            if (param is bool error && error)
             {
                 Application.Current.Dispatcher.Invoke(
-                    () => { Visibility = Visibility.Collapsed; });
-            });
+                    () => { LoadingMessage.Style = Application.Current.Resources["LoadingMessageError"] as Style; });
+            }
+            else
+            {
+                Task.Delay(1500).ContinueWith(_ =>
+                {
+                    Application.Current.Dispatcher.Invoke(
+                        () => { Visibility = Visibility.Collapsed; });
+                });
+            }
         }
     }
 }

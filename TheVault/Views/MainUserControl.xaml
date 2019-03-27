@@ -10,6 +10,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -19,7 +20,7 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         
-        <Canvas x:Name="BackupCanvas" Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="3"
+        <Canvas x:Name="BackupCanvas" Grid.Row="0" Grid.RowSpan="4" Grid.Column="0" Grid.ColumnSpan="3"
                 Visibility="{Binding BackingUpFiles, Converter={StaticResource BooleanToVisibilityConverter}}"
                 Background="{DynamicResource MaterialDesignPaper}"
                 ZIndex="10">
@@ -73,6 +74,7 @@
                 <TextBox Grid.Row="0" Grid.Column="1" 
                          x:Name="OriginPath"
                          Margin="0,3,5,0"
+                         Focusable="False"
                          Text="{Binding OriginPath}"
                          materialDesign:HintAssist.Hint="Path to origin folder" />
 
@@ -86,6 +88,7 @@
                 <TextBox Grid.Row="1" Grid.Column="1"  
                          x:Name="DestinationPath"
                          Margin="0,0,5,4"
+                         Focusable="False"
                          Text="{Binding DestinationPath}"
                          materialDesign:HintAssist.Hint="Path to destination folder" />
 
@@ -98,10 +101,34 @@
             </Grid>
         </materialDesign:Card>
 
-        <ListView Grid.Row="1" Grid.Column="0" 
+        <ToolBarTray Grid.Row="1" Grid.Column="0" IsLocked="True">
+            <ToolBar Style="{DynamicResource MaterialDesignToolBar}" ClipToBounds="True">
+                <ListBox SelectionChanged="OnDecryptedListSelectionChanged">
+                    <ListBoxItem Padding="0,4" x:Name="SortAlphaOne">
+                        <materialDesign:PackIcon Kind="SortAlphabetical" />
+                    </ListBoxItem>
+                    <ListBoxItem Padding="0,4" x:Name="SortSelected">
+                        <materialDesign:PackIcon Kind="Check" /> 
+                    </ListBoxItem>
+                    <ListBoxItem Padding="0,4" x:Name="SortPath">
+                        <materialDesign:PackIcon Kind="RoadVariant" />
+                    </ListBoxItem>
+                </ListBox>
+                <Separator Margin="6,5" />
+                <Label Content="{Binding SelectedFilesToolBar}"
+                    VerticalAlignment="Center" />
+            </ToolBar>
+        </ToolBarTray>
+        <ListView Grid.Row="2" Grid.Column="0" 
                   x:Name="DecryptedListView"
                   ItemsSource="{Binding DecryptedFiles}"
                   Focusable="False">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem" BasedOn="{StaticResource MaterialDesignGridViewItem}">
+                    <Setter Property="Focusable" Value="False" />
+                    <Setter Property="IsEnabled" Value="{Binding IsEnabled}" />
+                </Style>
+            </ListView.ItemContainerStyle>
             <ListView.View>
                 <GridView AllowsColumnReorder="False">
                     <GridViewColumn>
@@ -129,13 +156,13 @@
                                 <TextBlock Text="{Binding Path}" 
                                            Margin="0,1,0,0"
                                            Height="17"/>
-                            </DataTemplate>                            
+                            </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
-        <Canvas x:Name="LeftCanvas" Grid.Row="1" Grid.Column="0"
+        <Canvas x:Name="LeftCanvas" Grid.Row="1" Grid.RowSpan="2" Grid.Column="0"
                 Visibility="{Binding OriginFolderEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"
                 Background="{DynamicResource MaterialDesignPaper}">
             <Grid Width="{Binding ActualWidth, ElementName=LeftCanvas}" 
@@ -147,13 +174,38 @@
                         HorizontalAlignment="Center" />    
             </Grid>
         </Canvas>
-        <GridSplitter Grid.Row="1" Grid.Column="1" 
+        <GridSplitter Grid.Row="1" Grid.RowSpan="2" Grid.Column="1" 
                       Style="{StaticResource GridSplitter}"
                       HorizontalAlignment="Stretch"/>
-        <ListView Grid.Row="1" Grid.Column="2" 
+        
+        <ToolBarTray Grid.Row="1" Grid.Column="2" IsLocked="True">
+            <ToolBar Style="{DynamicResource MaterialDesignToolBar}" ClipToBounds="True">
+                <ListBox SelectionChanged="OnEncryptedListSelectionChanged">
+                    <ListBoxItem Padding="0,4" x:Name="SortAlpha">
+                        <materialDesign:PackIcon Kind="SortAlphabetical" />
+                    </ListBoxItem>
+                    <ListBoxItem Padding="0,4" x:Name="SortWeight">
+                        <materialDesign:PackIcon Kind="Weight" />
+                    </ListBoxItem>
+                </ListBox>
+                <Separator Margin="6,5" />
+                <Button ToolTip="Delete all" Command="{Binding ClearDestCmd}" Padding="16,4" >
+                    <materialDesign:PackIcon Kind="DeleteForever" />
+                </Button>
+                <Separator Margin="6,5" />
+                <Label Content="{Binding EncryptedFilesToolBar}"
+                    VerticalAlignment="Center" />
+            </ToolBar>
+        </ToolBarTray>
+        <ListView Grid.Row="2" Grid.Column="2" 
                   x:Name="EncryptedListView"
                   ItemsSource="{Binding EncryptedFiles}"
                   Focusable="False">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem" BasedOn="{StaticResource MaterialDesignGridViewItem}">
+                    <Setter Property="Focusable" Value="False" />
+                </Style>
+            </ListView.ItemContainerStyle>
             <ListView.View>
                 <GridView AllowsColumnReorder="False">
                     <GridViewColumn Width="Auto" Header="Filename">
@@ -177,7 +229,7 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <Canvas x:Name="RightCanvas" Grid.Row="1" Grid.Column="2" 
+        <Canvas x:Name="RightCanvas" Grid.Row="1" Grid.RowSpan="2" Grid.Column="2" 
                 Visibility="{Binding DestinationFolderEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"
                 Background="{DynamicResource MaterialDesignPaper}">
             <Grid Width="{Binding ActualWidth, ElementName=RightCanvas}" 
@@ -190,11 +242,10 @@
             </Grid>
         </Canvas>
         
-        <materialDesign:Card Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+        <materialDesign:Card Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3"
                              x:Name="BottomCard" Padding="3" UniformCornerRadius="0">
             <Grid x:Name="BottomControls">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
@@ -210,30 +261,22 @@
                         Margin="5,5,5,5"
                         Content="ENCRYPT"/>
 
-                <Button Grid.Column="1"
-                        x:Name="ClearDestFolder"
-                        Style="{StaticResource ClearButton}"
-                        Command="{Binding ClearDestCmd}"
-                        Margin="0,5,5,5"
-                        Content="CLEAR DEST"/>
+                <Rectangle Grid.Column="1" Margin="4" Style="{StaticResource Separator}" />
 
-                <!-- Style="{StaticResource Separator}" -->
-                <Rectangle Grid.Column="2" Margin="4" Stroke="{x:Null}" />
-
-                <Button Grid.Column="3"
+                <Button Grid.Column="2"
                         x:Name="StartServer"
                         Style="{StaticResource ServerButton}"
                         Margin="5,5,5,5"
                         Content="START SERVER"/>
 
-                <Button Grid.Column="4"
+                <Button Grid.Column="3"
                         x:Name="SendData"
                         Style="{StaticResource SendButton}"
                         Margin="0,5,5,5"
                         Content="SEND DATA"/>
 
                 <TextBlock x:Name="ServerMessageBlock"
-                           Grid.Column="5" 
+                           Grid.Column="4" 
                            TextAlignment="Right"
                            VerticalAlignment="Center"
                            Margin="0,0,5,0"
@@ -241,7 +284,7 @@
                            Text="{Binding ServerMessage}" />
 
                 <ProgressBar x:Name="ServerProgressBar"
-                             Grid.Column="6"
+                             Grid.Column="5"
                              Height="10"
                              Width="200"
                              Foreground="#6c5ce7"
@@ -253,7 +296,7 @@
             </Grid>
         </materialDesign:Card>
         
-        <materialDesign:DialogHost Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+        <materialDesign:DialogHost Grid.Row="1" Grid.RowSpan="2" Grid.Column="0" Grid.ColumnSpan="3"
                         x:Name="Dialog" HorizontalAlignment="Center" VerticalAlignment="Center">
             <materialDesign:DialogHost.Resources>
                 <Style TargetType="materialDesign:Card" BasedOn="{StaticResource {x:Type materialDesign:Card}}">

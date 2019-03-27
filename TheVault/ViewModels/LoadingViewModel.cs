@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using Newtonsoft.Json;
 using TheVault.Objects;
 using TheVault.Utils;
@@ -69,6 +70,8 @@ namespace TheVault.ViewModels
             }
         }
 
+        public bool hasError;
+
         #endregion //Properties
 
         #region Constructors
@@ -88,6 +91,7 @@ namespace TheVault.ViewModels
         /// </summary>
         public async void DecryptFilesAsync()
         {
+            hasError = false;
             var lines = File.ReadAllLines($"{Environment.CurrentDirectory}\\settings");
             if (lines.Length != 6) throw new Exception("The settings file is not correct.");
             
@@ -96,7 +100,7 @@ namespace TheVault.ViewModels
             var vaultDir = new DirectoryInfo($"{basePath}\\{lines[3]}");
             var password = lines[4];
             var salt = lines[5];
-            FilesToTreat = vaultDir.GetFiles("*", SearchOption.AllDirectories).Length;
+            FilesToTreat = vaultDir.EnumerateFiles("*", SearchOption.AllDirectories).Count();
 
             if (FilesToTreat == 0)
             {
@@ -107,7 +111,7 @@ namespace TheVault.ViewModels
             {
                 await Task.Run(() =>
                 {
-                    var mappingFile = vaultDir.GetFiles().FirstOrDefault(f => EncryptionUtil.Decipher(f.Name, 10) == "mapping.json");
+                    var mappingFile = vaultDir.EnumerateFiles().FirstOrDefault(f => EncryptionUtil.Decipher(f.Name, 10) == "mapping.json");
                     if (mappingFile == null) throw new Exception("Mapping file not found.");
 
                     //Decrypt mapping file
@@ -119,12 +123,21 @@ namespace TheVault.ViewModels
                     Message = "mapping.json";
 
                     //Decrypt all files
-                    foreach (var file in vaultDir.GetFiles().Where(f => EncryptionUtil.Decipher(f.Name, 10) != "mapping.json"))
+                    foreach (var file in vaultDir.EnumerateFiles().Where(f => EncryptionUtil.Decipher(f.Name, 10) != "mapping.json"))
                     {
                         var result = GetFileInformation(mapping, EncryptionUtil.Decipher(file.Name, 10));
                         var pathToFile = result[0];
                         var fBytes = File.ReadAllBytes($"{vaultDir.FullName}\\{file.Name}");
-                        var decryptedFile = EncryptionUtil.DecryptBytes(fBytes, password, salt);
+                        byte[] decryptedFile = null;
+                        try
+                        {
+                            decryptedFile = EncryptionUtil.DecryptBytes(fBytes, password, salt);
+                        }
+                        catch (Exception e)
+                        {
+                            hasError = true;
+                            MessageBox.Show(e.Message);
+                        }
 
                         if (!Directory.Exists($"{basePath}\\{pathToFile}"))
                             Directory.CreateDirectory($"{basePath}\\{pathToFile}");
@@ -133,10 +146,19 @@ namespace TheVault.ViewModels
                         Message = result.Last();
                         ProgressValue++;
                     }
-
+                }).ContinueWith(_ =>
+                {
                     ProgressValue = FilesToTreat;
-                    Message = $"{ProgressValue} files processed - 100%";
-                    DecryptFinished.Execute(null);
+                    if (hasError)
+                    {
+                        Message = $"Error when decrypting files !";
+                        DecryptFinished.Execute(true);
+                    }
+                    else
+                    {
+                        Message = $"{ProgressValue} files processed - 100%";
+                        DecryptFinished.Execute(null);
+                    }
                 });
             }
         }

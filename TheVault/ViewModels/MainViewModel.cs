@@ -2,25 +2,26 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using MediaToolkit;
 using MediaToolkit.Model;
 using Newtonsoft.Json;
 using TheVault.Objects;
 using TheVault.Utils;
+using Image = System.Drawing.Image;
 
 namespace TheVault.ViewModels
 {
-    //TODO select by default all files : gif/jpg/mp4 ...
-    //disable other critical files to selection but load them either way
-    //Progress bar not working
+    //TODO when origin folder changed, unselect all and select only new files
+    //TODO problem, when syncing with phone, need full json, or update json on phone!
+    //TODO rework how Json file is generated and used, when there are files in dest folder and user encrypt again, buggy json !!
     public class MainViewModel : BaseViewModel
-    {
+    {        
         #region Instance variables
 
         private string _originPath;
@@ -55,6 +56,10 @@ namespace TheVault.ViewModels
 
         private RelayCommand _openDialogCmd;
 
+        private RelayCommand _decryptListItemChangedCmd;
+        
+        private RelayCommand _encryptListItemChangedCmd;
+
         private List<FileViewModel> _encryptedFiles;
 
         private List<FileViewModel> _decryptedFiles;
@@ -68,6 +73,10 @@ namespace TheVault.ViewModels
         private bool _showProgressBar;
 
         private bool _backingUpFiles;
+
+        private string _selectedFilesToolBar;
+
+        private string _encryptedFilesToolBar;
 
         #endregion //Instance variables
 
@@ -260,6 +269,28 @@ namespace TheVault.ViewModels
             }
         }
         
+        public RelayCommand DecryptListItemChangedCmd
+        {
+            get => _decryptListItemChangedCmd;
+            set
+            {
+                if (_decryptListItemChangedCmd == value) return;
+                _decryptListItemChangedCmd = value;
+                NotifyPropertyChanged("DecryptListItemChangedCmd");
+            }
+        }
+        
+        public RelayCommand EncryptListItemChangedCmd
+        {
+            get => _encryptListItemChangedCmd;
+            set
+            {
+                if (_encryptListItemChangedCmd == value) return;
+                _encryptListItemChangedCmd = value;
+                NotifyPropertyChanged("EncryptListItemChangedCmd");
+            }
+        }
+            
         public List<FileViewModel> EncryptedFiles
         {
             get => _encryptedFiles;
@@ -284,6 +315,26 @@ namespace TheVault.ViewModels
             }
         }
 
+        public string SelectedFilesToolBar
+        {
+            get => _selectedFilesToolBar;
+            set
+            {
+                _selectedFilesToolBar = $"Files selected : {value}";
+                NotifyPropertyChanged("SelectedFilesToolBar");
+            }
+        }
+        
+        public string EncryptedFilesToolBar
+        {
+            get => _encryptedFilesToolBar;
+            set
+            {
+                _encryptedFilesToolBar = $"Files in folder : {value}";
+                NotifyPropertyChanged("EncryptedFilesToolBar");
+            }
+        }
+        
         public bool AllSelected
         {
             get => _allSelected;
@@ -330,13 +381,16 @@ namespace TheVault.ViewModels
         }
 
         public bool OriginFolderEmpty => !DecryptedFiles.Any();
-
+        
         public bool DestinationFolderEmpty => !EncryptedFiles.Any();
 
-        public bool IsItemSelectionChanged { get; set; }
-        public string BasePath { get; set; }
-        public FileSystemWatcher DestinationWatcher { get; set; }
-        public FileSystemWatcher OriginWatcher { get; set; }
+        public bool IsItemSelectionChanged;
+
+        public string BasePath;
+
+        public FileSystemWatcher DestinationWatcher;
+
+        public FileSystemWatcher OriginWatcher;
 
         #endregion //Properties
 
@@ -458,16 +512,79 @@ namespace TheVault.ViewModels
             }
 
             if (AllSelected)
-                DecryptedFiles.ForEach(f => f.IsSelected = true);
+                DecryptedFiles.ForEach(f =>
+                {
+                    if (f.IsEnabled)
+                        f.IsSelected = true;
+                });
             else
-                DecryptedFiles.ForEach(f => f.IsSelected = false);
+                DecryptedFiles.ForEach(f =>
+                {
+                    if (f.IsEnabled)
+                        f.IsSelected = false;
+                });
+            
+            SelectedFilesToolBar = DecryptedFiles.Count(f => f.IsSelected).ToString();
         }
 
         private void ItemSelectionChanged()
         {
-            if (!AllSelected) return;
-            IsItemSelectionChanged = true;
-            AllSelected = false;
+            SelectedFilesToolBar = DecryptedFiles.Count(f => f.IsSelected).ToString();
+            if (AllSelected)
+            {
+                IsItemSelectionChanged = true;
+                AllSelected = false;
+            }
+            else
+            {
+                if (!DecryptedFiles.Where(f => f.IsEnabled).All(f => f.IsSelected)) return;
+                IsItemSelectionChanged = true;
+                AllSelected = true;
+            }
+        }
+
+        public void SortEncryptButtonChanged(object item)
+        {
+            var name = (item as ListBoxItem)?.Name;
+            switch (name)
+            {
+                case "SortAlpha":
+                    EncryptedFiles = EncryptedFiles.OrderByDescending(f => f.FileName).ToList();
+                    break;
+                
+                case "SortWeight":
+                    //TODO won't work as expected because Mo and Ko
+                    EncryptedFiles = EncryptedFiles.OrderBy(f => int.Parse(f.SizeMb.Remove(f.SizeMb.Length -3))).ToList();
+                    break;
+                
+                case null:
+                    EncryptedFiles = EncryptedFiles.OrderBy(f => f.FileName).ToList();
+                    break;
+            }
+        }
+
+        public void SortDecryptButtonChanged(object item)
+        {
+            var name = (item as ListBoxItem)?.Name;
+            switch (name)
+            {
+                case "SortAlphaOne":
+                    DecryptedFiles = DecryptedFiles.OrderByDescending(f => f.FileName).ToList();
+                    break;
+                
+                case "SortSelected":
+                    //TODO does not work as expected
+                    DecryptedFiles = DecryptedFiles.OrderBy(f => f.IsSelected).ThenBy(f => !f.IsSelected).ThenBy(f => !f.IsEnabled).ToList();
+                    break;
+                
+                case "SortPath":
+                    DecryptedFiles = DecryptedFiles.OrderBy(f => f.Path).ToList();
+                    break;
+                
+                case null:
+                    DecryptedFiles = DecryptedFiles.OrderBy(f => f.FileName).ToList();
+                    break;
+            }
         }
 
         #endregion //Events
@@ -488,21 +605,23 @@ namespace TheVault.ViewModels
 
         private void GetOriginFolder()
         {
-            var files = new DirectoryInfo(OriginPath).GetFiles("*", SearchOption.AllDirectories);
+            var files = new DirectoryInfo(OriginPath).EnumerateFiles("*", SearchOption.AllDirectories);
             DecryptedFiles = new List<FileViewModel>();
             foreach (var file in files)
             {
-                var fileViewModel = new FileViewModel(false, file.Name, file.DirectoryName?.Remove(0, BasePath.Length));
+                var isEnabled = FileUtil.FileExtensions.Contains(file.Extension);
+                var fileViewModel = new FileViewModel(isEnabled, file.Name, file.DirectoryName?.Remove(0, BasePath.Length));
                 fileViewModel.SelectionChanged = new RelayCommand(true, _ => ItemSelectionChanged());   
                 DecryptedFiles.Add(fileViewModel);
             }
 
+            AllSelected = true;
             NotifyPropertyChanged("OriginFolderEmpty");
         }
 
         private void GetDestinationFolder()
         {
-            var files = new DirectoryInfo(DestinationPath).GetFiles("*", SearchOption.AllDirectories);
+            var files = new DirectoryInfo(DestinationPath).EnumerateFiles("*", SearchOption.AllDirectories);
             EncryptedFiles = new List<FileViewModel>();
             foreach (var file in files)
             {
@@ -511,6 +630,7 @@ namespace TheVault.ViewModels
                 EncryptedFiles.Add(fileViewModel);
             }
 
+            EncryptedFilesToolBar = EncryptedFiles.Count().ToString();
             NotifyPropertyChanged("DestinationFolderEmpty");
         }
 
@@ -555,7 +675,8 @@ namespace TheVault.ViewModels
                 
                 //Check if Vault misses some files from Origin
                 var result = GetMissingFileNames().ToList();
-                ProgressBarMax = result.Count() *2 +1;
+                ProgressBarValue = 0;
+                ProgressBarMax = result.Count() *2;
                 if (result.Count() != 0)
                 {
                     //We get the json and try to edit it
@@ -736,7 +857,8 @@ namespace TheVault.ViewModels
             var mapping = new List<FolderObject>();
             await Task.Run(() =>
             {
-                ProgressBarMax = DecryptedFiles.Count(f => f.IsSelected) *2 +1;
+                ProgressBarValue = 0;
+                ProgressBarMax = DecryptedFiles.Count(f => f.IsSelected) *2;
                 ShowProgressBar = true;
                 foreach (var file in DecryptedFiles.Where(f => f.IsSelected))
                 {
