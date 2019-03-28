@@ -553,8 +553,13 @@ namespace TheVault.ViewModels
                     break;
                 
                 case "SortWeight":
-                    //TODO won't work as expected because Mo and Ko
-                    EncryptedFiles = EncryptedFiles.OrderBy(f => int.Parse(f.SizeMb.Remove(f.SizeMb.Length -3))).ToList();
+                    EncryptedFiles = EncryptedFiles.OrderByDescending(f =>
+                    {
+                        if (f.SizeMb.Contains("Mo"))
+                            return int.Parse(f.SizeMb.Remove(f.SizeMb.Length - 3)) * 1024;
+                        
+                        return int.Parse(f.SizeMb.Remove(f.SizeMb.Length - 3));
+                    }).ToList();
                     break;
                 
                 case null:
@@ -573,8 +578,9 @@ namespace TheVault.ViewModels
                     break;
                 
                 case "SortSelected":
-                    //TODO does not work as expected
-                    DecryptedFiles = DecryptedFiles.OrderBy(f => f.IsSelected).ThenBy(f => !f.IsSelected).ThenBy(f => !f.IsEnabled).ToList();
+                    DecryptedFiles = DecryptedFiles.OrderByDescending(f => f.IsSelected && f.IsEnabled)
+                                                    .ThenByDescending(f => !f.IsSelected && f.IsEnabled)
+                                                    .ThenByDescending(f => !f.IsEnabled).ToList();
                     break;
                 
                 case "SortPath":
