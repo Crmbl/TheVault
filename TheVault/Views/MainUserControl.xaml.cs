@@ -1,6 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using TheVault.Objects;
 using TheVault.Utils;
 using TheVault.ViewModels;
 
@@ -16,9 +18,9 @@ namespace TheVault.Views
             InitializeComponent();
         }
 
-        public void Init()
+        public void Init(List<FolderObject> mapping)
         {
-            var viewModel = new MainViewModel();
+            var viewModel = new MainViewModel(mapping);
             DataContext = viewModel;
             
             viewModel.OnEncryptFinished = new RelayCommand(true, OnEncryptFinished);

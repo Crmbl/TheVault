@@ -70,8 +70,10 @@ namespace TheVault.ViewModels
             }
         }
 
-        public bool hasError;
+        private bool HasError { get; set; }
 
+        public List<FolderObject> Mapping { get; set; }
+        
         #endregion //Properties
 
         #region Constructors
@@ -91,7 +93,7 @@ namespace TheVault.ViewModels
         /// </summary>
         public async void DecryptFilesAsync()
         {
-            hasError = false;
+            HasError = false;
             var lines = File.ReadAllLines($"{Environment.CurrentDirectory}\\settings");
             if (lines.Length != 6) throw new Exception("The settings file is not correct.");
             
@@ -118,14 +120,14 @@ namespace TheVault.ViewModels
                     var mBytes = File.ReadAllBytes($"{mappingFile.FullName}");
                     var mFile = EncryptionUtil.DecryptBytes(mBytes, password, salt);
                     File.WriteAllBytes($"{originDir.FullName}\\mapping.json", mFile);
-                    var mapping = JsonConvert.DeserializeObject<List<FolderObject>>(File.ReadAllText($"{originDir.FullName}\\mapping.json"));
+                    Mapping = JsonConvert.DeserializeObject<List<FolderObject>>(File.ReadAllText($"{originDir.FullName}\\mapping.json"));
                     ProgressValue++;
                     Message = "mapping.json";
 
                     //Decrypt all files
                     foreach (var file in vaultDir.EnumerateFiles().Where(f => EncryptionUtil.Decipher(f.Name, 10) != "mapping.json"))
                     {
-                        var result = GetFileInformation(mapping, EncryptionUtil.Decipher(file.Name, 10));
+                        var result = GetFileInformation(Mapping, EncryptionUtil.Decipher(file.Name, 10));
                         var pathToFile = result[0];
                         var fBytes = File.ReadAllBytes($"{vaultDir.FullName}\\{file.Name}");
                         byte[] decryptedFile = null;
@@ -135,7 +137,7 @@ namespace TheVault.ViewModels
                         }
                         catch (Exception e)
                         {
-                            hasError = true;
+                            HasError = true;
                             MessageBox.Show(e.Message);
                         }
 
@@ -149,7 +151,7 @@ namespace TheVault.ViewModels
                 }).ContinueWith(_ =>
                 {
                     ProgressValue = FilesToTreat;
-                    if (hasError)
+                    if (HasError)
                     {
                         Message = $"Error when decrypting files !";
                         DecryptFinished.Execute(true);

@@ -10,6 +10,8 @@ namespace TheVault.ViewModels
         
         private bool _isEnabled;
 
+        private bool _isNew;
+
         private RelayCommand _selectionChanged;
 
         #endregion //Instance variables
@@ -50,6 +52,17 @@ namespace TheVault.ViewModels
             }
         }
 
+        public bool IsNew
+        {
+            get => _isNew;
+            set
+            {
+                if (_isNew == value) return;
+                _isNew = value;
+                NotifyPropertyChanged("IsNew");
+            }
+        }
+
         public string FileName { get; set; }
 
         public string Path { get; set; }
@@ -60,9 +73,10 @@ namespace TheVault.ViewModels
 
         #region Constructor
 
-        public FileViewModel(bool isEnabled, string fileName, string path)
+        public FileViewModel(bool isEnabled, string fileName, string path, bool isNew = false)
         {
             IsSelected = false;
+            IsNew = isNew;
             IsEnabled = isEnabled;
             FileName = fileName;
             Path = path;

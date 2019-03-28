@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using TheVault.ViewModels;
 
 namespace TheVault
 {
@@ -26,7 +27,8 @@ namespace TheVault
         {
             if (sender is UserControl loadingControl && loadingControl.Visibility == Visibility.Collapsed)
             {
-                MainControl.Init();
+                var loadingViewModel = loadingControl.DataContext as LoadingViewModel;
+                MainControl.Init(loadingViewModel?.Mapping);
                 MainControl.Visibility = Visibility.Visible;
             }
         }

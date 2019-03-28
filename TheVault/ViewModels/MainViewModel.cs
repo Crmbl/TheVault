@@ -382,29 +382,45 @@ namespace TheVault.ViewModels
             }
         }
 
+        private List<FolderObject> Mapping { get; set; }
+
         public bool OriginFolderEmpty => !DecryptedFiles.Any();
         
         public bool DestinationFolderEmpty => !EncryptedFiles.Any();
 
-        public bool IsItemSelectionChanged;
+        private bool IsItemSelectionChanged { get; set; }
 
-        public string BasePath;
+        private string BasePath { get; set; }
 
-        public FileSystemWatcher DestinationWatcher;
+        private FileSystemWatcher DestinationWatcher { get; set; }
 
-        public FileSystemWatcher OriginWatcher;
+        private FileSystemWatcher OriginWatcher { get; set; }
+        
+        private List<string> OriginFileNames { get; set; }
+        
+        private List<string> DestinationFileNames { get; set; }
 
         #endregion //Properties
 
         #region Constructors
 
-        public MainViewModel()
+        public MainViewModel(List<FolderObject> mapping)
         {
-            BackingUpFiles = false;
+            #region Init
+            
+            if (Application.Current.MainWindow != null)
+            {
+                Application.Current.MainWindow.Height = 900;
+                Application.Current.MainWindow.Width = 1200;
+                Application.Current.ShutdownMode = ShutdownMode.OnLastWindowClose;
+                Application.Current.MainWindow.Closing += OnClosing;
+                Application.Current.MainWindow.Closed += OnClosed;
+            }
+            
+            Mapping = mapping ?? new List<FolderObject>();
             DecryptedFiles = new List<FileViewModel>();
             EncryptedFiles = new List<FileViewModel>();
 
-            AllSelected = false;
             var lines = File.ReadAllLines($"{Environment.CurrentDirectory}\\settings");
             BasePath = lines[0].EndsWith("\\") ? lines[0] : $"{lines[0]}\\";
             OriginPath = $"{BasePath}{lines[1]}";
@@ -412,8 +428,16 @@ namespace TheVault.ViewModels
             VaultPath = $"{BasePath}{lines[3]}";
             PassValue = lines[4];
             SaltValue = lines[5];
-
+            
+            OriginFileNames = new DirectoryInfo(OriginPath).EnumerateFiles("*", 
+                        SearchOption.AllDirectories).Select(f => f.Name).ToList();
+            DestinationFileNames = new DirectoryInfo(DestinationPath).EnumerateFiles("*", 
+                SearchOption.AllDirectories).Select(f => f.Name).ToList();
+            
+            BackingUpFiles = false;
+            AllSelected = false;
             ShowProgressBar = false;
+            
             OpenOriginFolderCmd = new RelayCommand(true, _ => OpenOriginFolder());
             OpenDestinationFolderCmd = new RelayCommand(true, _ => OpenDestinationFolder());
             ClearDestCmd = new RelayCommand(true, _ => ClearDestinationFolder());
@@ -428,17 +452,6 @@ namespace TheVault.ViewModels
                 ClearDestinationFolder();
                 EncryptSelected();
             });
-
-            GetOriginFolder();
-            GetDestinationFolder();
-            if (Application.Current.MainWindow != null)
-            {
-                Application.Current.MainWindow.Height = 900;
-                Application.Current.MainWindow.Width = 1200;
-                Application.Current.ShutdownMode = ShutdownMode.OnLastWindowClose;
-                Application.Current.MainWindow.Closing += OnClosing;
-                Application.Current.MainWindow.Closed += OnClosed;
-            }
 
             OriginWatcher = new FileSystemWatcher
             {
@@ -465,6 +478,11 @@ namespace TheVault.ViewModels
             DestinationWatcher.Deleted += OnChanged;
             DestinationWatcher.Renamed += OnRenamed;
             DestinationWatcher.EnableRaisingEvents = true;
+            
+            #endregion //Init
+            
+            GetOriginFolder();
+            GetDestinationFolder();
         }
 
         #endregion //Constructors
@@ -518,17 +536,9 @@ namespace TheVault.ViewModels
             }
 
             if (AllSelected)
-                DecryptedFiles.ForEach(f =>
-                {
-                    if (f.IsEnabled)
-                        f.IsSelected = true;
-                });
+                DecryptedFiles.ForEach(f => { if (f.IsEnabled) f.IsSelected = true; });
             else
-                DecryptedFiles.ForEach(f =>
-                {
-                    if (f.IsEnabled)
-                        f.IsSelected = false;
-                });
+                DecryptedFiles.ForEach(f => { if (f.IsEnabled) f.IsSelected = false; });
             
             SelectedFilesToolBar = DecryptedFiles.Count(f => f.IsSelected).ToString();
         }
@@ -584,17 +594,19 @@ namespace TheVault.ViewModels
                     break;
                 
                 case "SortSelected":
-                    DecryptedFiles = DecryptedFiles.OrderByDescending(f => f.IsSelected && f.IsEnabled)
-                                                    .ThenByDescending(f => !f.IsSelected && f.IsEnabled)
+                    DecryptedFiles = DecryptedFiles.OrderByDescending(f => f.IsSelected && f.IsNew && f.IsEnabled)
+                                                    .ThenByDescending(f => f.IsSelected && !f.IsNew && f.IsEnabled)
+                                                    .ThenByDescending(f => !f.IsSelected && f.IsNew && f.IsEnabled)
+                                                    .ThenByDescending(f => !f.IsSelected && !f.IsNew && f.IsEnabled)
                                                     .ThenByDescending(f => !f.IsEnabled).ToList();
                     break;
                 
                 case "SortPath":
-                    DecryptedFiles = DecryptedFiles.OrderBy(f => f.Path).ToList();
+                    DecryptedFiles = DecryptedFiles.OrderByDescending(f => f.Path).ToList();
                     break;
                 
                 case null:
-                    DecryptedFiles = DecryptedFiles.OrderBy(f => f.FileName).ToList();
+                    DecryptedFiles = DecryptedFiles.OrderBy(f => f.Path).ToList();
                     break;
             }
         }
@@ -617,16 +629,42 @@ namespace TheVault.ViewModels
 
         private void GetOriginFolder()
         {
+            //TODO diff not working. Useful?
             var files = new DirectoryInfo(OriginPath).EnumerateFiles("*", SearchOption.AllDirectories);
+            var fileNames = files.Select(f => f.Name).ToList();
+            var diff = fileNames.Except(OriginFileNames).ToList();
+            //if (diff.Count == 0 && DecryptedFiles.Count == OriginFileNames.Count) return;
+            
+            OriginFileNames = fileNames;
             DecryptedFiles = new List<FileViewModel>();
-            foreach (var file in files)
-            {
-                var isEnabled = FileUtil.FileExtensions.Contains(file.Extension);
-                var fileViewModel = new FileViewModel(isEnabled, file.Name, file.DirectoryName?.Remove(0, BasePath.Length));
-                fileViewModel.SelectionChanged = new RelayCommand(true, _ => ItemSelectionChanged());
-                DecryptedFiles.Add(fileViewModel);
-            }
 
+            if (Mapping != null)
+            {
+                var mappingFiles = new List<FileObject>();
+                Mapping.ForEach(fo => mappingFiles.AddRange(fo.Files));
+
+                foreach (var file in files)
+                {
+                    var isEnabled = FileUtil.FileExtensions.Contains(file.Extension);
+                    var fileViewModel = mappingFiles.Any(f => f.OriginName == file.Name) ? 
+                        new FileViewModel(isEnabled, file.Name, file.DirectoryName?.Remove(0, BasePath.Length)) : 
+                        new FileViewModel(isEnabled, file.Name, file.DirectoryName?.Remove(0, BasePath.Length), isEnabled);
+                    
+                    fileViewModel.SelectionChanged = new RelayCommand(true, _ => ItemSelectionChanged());
+                    DecryptedFiles.Add(fileViewModel);
+                }
+            }
+            else if (Mapping == null)
+            {
+                foreach (var file in files)
+                {
+                    var isEnabled = FileUtil.FileExtensions.Contains(file.Extension);
+                    var fileViewModel = new FileViewModel(isEnabled, file.Name, file.DirectoryName?.Remove(0, BasePath.Length), isEnabled);
+                    fileViewModel.SelectionChanged = new RelayCommand(true, _ => ItemSelectionChanged());
+                    DecryptedFiles.Add(fileViewModel);
+                }
+            }
+            
             AllSelected = true;
             SelectedFilesToolBar = DecryptedFiles.Count(f => f.IsSelected).ToString();
             NotifyPropertyChanged("OriginFolderEmpty");
@@ -634,7 +672,13 @@ namespace TheVault.ViewModels
 
         private void GetDestinationFolder()
         {
+            //TODO diff not working. Useful?
             var files = new DirectoryInfo(DestinationPath).EnumerateFiles("*", SearchOption.AllDirectories);
+            var fileNames = files.Select(f => f.Name).ToList();
+            var diff = fileNames.Except(DestinationFileNames).ToList();
+            //if (diff.Count == 0 && EncryptedFiles.Count == DestinationFileNames.Count) return;
+
+            DestinationFileNames = fileNames;
             EncryptedFiles = new List<FileViewModel>();
             foreach (var file in files)
             {
@@ -647,13 +691,13 @@ namespace TheVault.ViewModels
             NotifyPropertyChanged("DestinationFolderEmpty");
         }
 
-        private IEnumerable<string> GetMissingFileNames()
+        private List<string> GetMissingFileNames()
         {
             var vaultFolder = new DirectoryInfo(VaultPath);
             var decipheredNames = vaultFolder.EnumerateFiles().Select(x => EncryptionUtil.Decipher(x.Name, 10)).ToList();
             var originFolder = new DirectoryInfo(OriginPath);
             
-            return originFolder.EnumerateFiles("*", SearchOption.AllDirectories).Select(x => x.Name).Except(decipheredNames);
+            return originFolder.EnumerateFiles("*", SearchOption.AllDirectories).Select(x => x.Name).Except(decipheredNames).ToList();
         }
 
         private void ClearDestinationFolder()
@@ -687,7 +731,7 @@ namespace TheVault.ViewModels
                 }
                 
                 //Check if Vault misses some files from Origin
-                var result = GetMissingFileNames().ToList();
+                var result = GetMissingFileNames();
                 ProgressBarValue = 0;
                 ProgressBarMax = result.Count() *2;
                 if (result.Count() != 0)
