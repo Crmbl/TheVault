@@ -17,9 +17,12 @@ using Image = System.Drawing.Image;
 
 namespace TheVault.ViewModels
 {
-    //TODO when origin folder changed, unselect all and select only new files
-    //TODO problem, when syncing with phone, need full json, or update json on phone!
-    //TODO rework how Json file is generated and used, when there are files in dest folder and user encrypt again, buggy json !!
+    //TODO problem, when syncing with phone:
+    //=> phone send json, then update json with new encryptedFiles, then send new files with updated json
+    //TODO problem, how to find newly added files?
+    //=> check with the mapping file ?
+    
+    //TODO must rethink how this program is supposed to work...
     public class MainViewModel : BaseViewModel
     {        
         #region Instance variables
@@ -340,7 +343,6 @@ namespace TheVault.ViewModels
             get => _allSelected;
             set
             {
-                if (_allSelected == value) return;
                 _allSelected = value;
                 NotifyPropertyChanged("AllSelected");
                 AllSelectedChanged();
@@ -421,7 +423,11 @@ namespace TheVault.ViewModels
                 GetDestinationFolder();
                 AllSelected = false;
             });
-            EncryptCmd = new RelayCommand(true, _ => EncryptSelected());
+            EncryptCmd = new RelayCommand(true, _ =>
+            {
+                ClearDestinationFolder();
+                EncryptSelected();
+            });
 
             GetOriginFolder();
             GetDestinationFolder();
@@ -617,11 +623,12 @@ namespace TheVault.ViewModels
             {
                 var isEnabled = FileUtil.FileExtensions.Contains(file.Extension);
                 var fileViewModel = new FileViewModel(isEnabled, file.Name, file.DirectoryName?.Remove(0, BasePath.Length));
-                fileViewModel.SelectionChanged = new RelayCommand(true, _ => ItemSelectionChanged());   
+                fileViewModel.SelectionChanged = new RelayCommand(true, _ => ItemSelectionChanged());
                 DecryptedFiles.Add(fileViewModel);
             }
 
             AllSelected = true;
+            SelectedFilesToolBar = DecryptedFiles.Count(f => f.IsSelected).ToString();
             NotifyPropertyChanged("OriginFolderEmpty");
         }
 
