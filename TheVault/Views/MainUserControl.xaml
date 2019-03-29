@@ -104,14 +104,14 @@
         <ToolBarTray Grid.Row="1" Grid.Column="0" IsLocked="True">
             <ToolBar Style="{DynamicResource MaterialDesignToolBar}" ClipToBounds="True">
                 <ListBox SelectionChanged="OnDecryptedListSelectionChanged">
-                    <ListBoxItem Padding="0,4" x:Name="SortAlphaOne">
+                    <ListBoxItem Padding="0,4" x:Name="SortAlphaOne" ToolTip="Sort by name">
                         <materialDesign:PackIcon Kind="SortAlphabetical" />
                     </ListBoxItem>
-                    <ListBoxItem Padding="0,4" x:Name="SortSelected">
-                        <materialDesign:PackIcon Kind="Check" /> 
+                    <ListBoxItem Padding="0,4" x:Name="SortSelected" ToolTip="Sort by selection">
+                        <materialDesign:PackIcon Kind="Animation" /> 
                     </ListBoxItem>
-                    <ListBoxItem Padding="0,4" x:Name="SortPath">
-                        <materialDesign:PackIcon Kind="RoadVariant" />
+                    <ListBoxItem Padding="0,4" x:Name="SortPath" ToolTip="Sort by path">
+                        <materialDesign:PackIcon Kind="SortVariant" />
                     </ListBoxItem>
                 </ListBox>
                 <Separator Margin="6,5" />
@@ -147,9 +147,10 @@
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Visibility="{Binding IsNew, 
                                                              Converter={StaticResource BooleanToVisibilityConverter}}" 
-                                                             Kind="Circle"
-                                                             Height="6"
-                                                             Width="6"
+                                                             Kind="Plus"
+                                                             Foreground="#badc58"
+                                                             Height="12"
+                                                             Width="12"
                                                              VerticalAlignment="Center"
                                                              Margin="0,0,5,0"/>
                                     <TextBlock Text="{Binding FileName}"
@@ -190,16 +191,16 @@
         <ToolBarTray Grid.Row="1" Grid.Column="2" IsLocked="True">
             <ToolBar Style="{DynamicResource MaterialDesignToolBar}" ClipToBounds="True">
                 <ListBox SelectionChanged="OnEncryptedListSelectionChanged">
-                    <ListBoxItem Padding="0,4" x:Name="SortAlpha">
+                    <ListBoxItem Padding="0,4" x:Name="SortAlpha" ToolTip="Sort by name">
                         <materialDesign:PackIcon Kind="SortAlphabetical" />
                     </ListBoxItem>
-                    <ListBoxItem Padding="0,4" x:Name="SortWeight">
+                    <ListBoxItem Padding="0,4" x:Name="SortWeight" ToolTip="Sort by size">
                         <materialDesign:PackIcon Kind="Weight" />
                     </ListBoxItem>
                 </ListBox>
                 <Separator Margin="6,5" />
                 <Button ToolTip="Delete all" Command="{Binding ClearDestCmd}" Padding="16,4" >
-                    <materialDesign:PackIcon Kind="DeleteForever" />
+                    <materialDesign:PackIcon Kind="Broom" />
                 </Button>
                 <Separator Margin="6,5" />
                 <Label Content="{Binding EncryptedFilesToolBar}"
@@ -274,12 +275,14 @@
 
                 <Button Grid.Column="2"
                         x:Name="StartServer"
+                        Command="{Binding StartServerCmd}"
                         Style="{StaticResource ServerButton}"
                         Margin="5,5,5,5"
                         Content="START SERVER"/>
 
                 <Button Grid.Column="3"
                         x:Name="SendData"
+                        Command="{Binding SendDataCommand}"
                         Style="{StaticResource SendButton}"
                         Margin="0,5,5,5"
                         Content="SEND DATA"/>

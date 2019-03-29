@@ -12,9 +12,7 @@ namespace TheVault.Utils
             /*Image*/
             ".gif", ".jpg", ".jpeg", ".bmp", ".png",
             /*Audio*/
-            ".flac", ".m4a", ".mp3", ".wav", ".wma",
-            /*Other*/
-            ".json"
+            ".flac", ".m4a", ".mp3", ".wav", ".wma"
         };
 
         public static void GetFileExtensions(DirectoryInfo dir, string outputPath)

@@ -17,12 +17,6 @@ using Image = System.Drawing.Image;
 
 namespace TheVault.ViewModels
 {
-    //TODO problem, when syncing with phone:
-    //=> phone send json, then update json with new encryptedFiles, then send new files with updated json
-    //TODO problem, how to find newly added files?
-    //=> check with the mapping file ?
-    
-    //TODO must rethink how this program is supposed to work...
     public class MainViewModel : BaseViewModel
     {        
         #region Instance variables
@@ -62,6 +56,10 @@ namespace TheVault.ViewModels
         private RelayCommand _decryptListItemChangedCmd;
         
         private RelayCommand _encryptListItemChangedCmd;
+        
+        private RelayCommand _startServerCmd;
+        
+        private RelayCommand _sendDataCommand;
 
         private List<FileViewModel> _encryptedFiles;
 
@@ -192,6 +190,28 @@ namespace TheVault.ViewModels
                 if (_openDestinationFolderCmd == value) return;
                 _openDestinationFolderCmd = value;
                 NotifyPropertyChanged("OpenDestinationFolderCmd");
+            }
+        }
+        
+        public RelayCommand SendDataCommand
+        {
+            get => _sendDataCommand;
+            set
+            {
+                if (_sendDataCommand == value) return;
+                _sendDataCommand = value;
+                NotifyPropertyChanged("SendDataCommand");
+            }
+        }
+        
+        public RelayCommand StartServerCmd
+        {
+            get => _startServerCmd;
+            set
+            {
+                if (_startServerCmd == value) return;
+                _startServerCmd = value;
+                NotifyPropertyChanged("StartServerCmd");
             }
         }
         
@@ -441,6 +461,8 @@ namespace TheVault.ViewModels
             OpenOriginFolderCmd = new RelayCommand(true, _ => OpenOriginFolder());
             OpenDestinationFolderCmd = new RelayCommand(true, _ => OpenDestinationFolder());
             ClearDestCmd = new RelayCommand(true, _ => ClearDestinationFolder());
+            StartServerCmd = new RelayCommand(true, _ => StartServer());
+            SendDataCommand = new RelayCommand(true, _ => SendData());
             RefreshOriginFolderCmd = new RelayCommand(true, _ =>
             {
                 GetOriginFolder();
@@ -629,11 +651,14 @@ namespace TheVault.ViewModels
 
         private void GetOriginFolder()
         {
-            //TODO diff not working. Useful?
             var files = new DirectoryInfo(OriginPath).EnumerateFiles("*", SearchOption.AllDirectories);
             var fileNames = files.Select(f => f.Name).ToList();
-            var diff = fileNames.Except(OriginFileNames).ToList();
-            //if (diff.Count == 0 && DecryptedFiles.Count == OriginFileNames.Count) return;
+
+            if (files.Count() == OriginFileNames.Count && DecryptedFiles.Count == OriginFileNames.Count)
+            {
+                var diff = fileNames.Except(OriginFileNames).ToList();
+                if (diff.Count == 0) return;
+            }
             
             OriginFileNames = fileNames;
             DecryptedFiles = new List<FileViewModel>();
@@ -672,17 +697,20 @@ namespace TheVault.ViewModels
 
         private void GetDestinationFolder()
         {
-            //TODO diff not working. Useful?
             var files = new DirectoryInfo(DestinationPath).EnumerateFiles("*", SearchOption.AllDirectories);
             var fileNames = files.Select(f => f.Name).ToList();
-            var diff = fileNames.Except(DestinationFileNames).ToList();
-            //if (diff.Count == 0 && EncryptedFiles.Count == DestinationFileNames.Count) return;
+            
+            if (files.Count() == DestinationFileNames.Count && EncryptedFiles.Count == DestinationFileNames.Count)
+            {
+                var diff = fileNames.Except(DestinationFileNames).ToList();
+                if (diff.Count == 0) return;
+            }
 
             DestinationFileNames = fileNames;
             EncryptedFiles = new List<FileViewModel>();
             foreach (var file in files)
             {
-                var fileSize = file.Length / 1024 > 1024 ? $"{file.Length / 1024 / 1024} Mo" : $"{file.Length / 1024} Ko";
+                var fileSize = file.Length / 1024 > 1024 ? $"{file.Length / 1024 / 1024} Mo" : file.Length / 1024 == 0 ? $"1 Ko" : $"{file.Length / 1024} Ko";
                 var fileViewModel = new FileViewModel(file.Name, fileSize);
                 EncryptedFiles.Add(fileViewModel);
             }
@@ -903,6 +931,19 @@ namespace TheVault.ViewModels
             
             if (onClosing)
                 File.Delete($"{VaultPath}\\mapping.json");
+        }
+
+        private void StartServer()
+        {
+            //TODO Start listening server + add message and stuff
+        }
+
+        private void SendData()
+        {
+            //TODO add connectionEvent ?
+            //=> phone send json, then update phone json with destinationFolder json
+            //if phone json == null then send everything in dest folder
+            //=> send updated json with only newly added files (check if already present in phone json)
         }
         
         #endregion //Private methods
