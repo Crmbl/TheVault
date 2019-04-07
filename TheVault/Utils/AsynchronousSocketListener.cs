@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -18,6 +19,7 @@ namespace TheVault.Utils
         // Received data string.  
         public StringBuilder sb = new StringBuilder();
     }
+    
 
     public class AsynchronousSocketListener
     {
@@ -35,12 +37,11 @@ namespace TheVault.Utils
             // running the listener is "host.contoso.com".  
             IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
             IPAddress ipAddress = ipHostInfo.AddressList[3];
-            Console.WriteLine($"Ip server : {ipAddress}");
+            Console.WriteLine($@"Ip server : {ipAddress}");
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
 
             // Create a TCP/IP socket.  
-            Socket listener = new Socket(ipAddress.AddressFamily,
-                SocketType.Stream, ProtocolType.Tcp);
+            Socket listener = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
             // Bind the socket to the local endpoint and listen for incoming connections.  
             try
@@ -54,10 +55,8 @@ namespace TheVault.Utils
                     allDone.Reset();
 
                     // Start an asynchronous socket to listen for connections.  
-                    Console.WriteLine("Waiting for a connection...");
-                    listener.BeginAccept(
-                        new AsyncCallback(AcceptCallback),
-                        listener);
+                    Console.WriteLine(@"Waiting for a connection...");
+                    listener.BeginAccept(AcceptCallback, listener);
 
                     // Wait until a connection is made before continuing.  
                     allDone.WaitOne();
@@ -86,8 +85,7 @@ namespace TheVault.Utils
             // Create the state object.  
             StateObject state = new StateObject();
             state.workSocket = handler;
-            handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
-                new AsyncCallback(ReadCallback), state);
+            handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, ReadCallback, state);
         }
 
         public static void ReadCallback(IAsyncResult ar)
@@ -105,8 +103,7 @@ namespace TheVault.Utils
             if (bytesRead > 0)
             {
                 // There  might be more data, so store the data received so far.  
-                state.sb.Append(Encoding.ASCII.GetString(
-                    state.buffer, 0, bytesRead));
+                state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, bytesRead));
 
                 // Check for end-of-file tag. If it is not there, read   
                 // more data.  
@@ -117,17 +114,47 @@ namespace TheVault.Utils
                     // client. Display it on the console.  
                     Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
                         content.Length, content);
+                    
                     // Echo the data back to the client.  
-                    Send(handler, content);
+                    //Send(handler, content);
                 }
                 else
                 {
                     // Not all data received. Get more.  
-                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
-                    new AsyncCallback(ReadCallback), state);
+                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, ReadCallback, state);
                 }
             }
         }
+        
+        /*
+            int bytesRead;
+            int current = 0;
+         
+            ServerSocket serverSocket = null;
+            serverSocket = new ServerSocket(13267);
+               
+            while(true) {
+                Socket clientSocket = null;
+                clientSocket = serverSocket.accept();
+                 
+                InputStream in = clientSocket.getInputStream();
+                 
+                DataInputStream clientData = new DataInputStream(in); 
+                 
+                String fileName = clientData.readUTF();   
+                OutputStream output = new FileOutputStream(fileName);   
+                long size = clientData.readLong();   
+                byte[] buffer = new byte[1024];   
+                while (size > 0 && (bytesRead = clientData.read(buffer, 0, (int)Math.min(buffer.length, size))) != -1)   
+                {   
+                    output.write(buffer, 0, bytesRead);   
+                    size -= bytesRead;   
+                }
+                 
+                // Closing the FileOutputStream handle
+                output.close();
+            }
+        */
 
         public static void Send(Socket handler, String data)
         {
@@ -148,7 +175,7 @@ namespace TheVault.Utils
 
                 // Complete sending the data to the remote device.  
                 int bytesSent = handler.EndSend(ar);
-                Console.WriteLine("Sent {0} bytes to client.", bytesSent);
+                Console.WriteLine(@"Sent {0} bytes to client.", bytesSent);
 
                 handler.Shutdown(SocketShutdown.Both);
                 handler.Close();

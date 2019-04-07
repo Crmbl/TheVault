@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using MediaToolkit;
 using MediaToolkit.Model;
 using Newtonsoft.Json;
@@ -936,6 +937,9 @@ namespace TheVault.ViewModels
         private void StartServer()
         {
             //TODO Start listening server + add message and stuff
+            Application.Current.Dispatcher.BeginInvoke(new Action(AsynchronousSocketListener.StartListening), 
+                DispatcherPriority.Normal);
+
         }
 
         private void SendData()
