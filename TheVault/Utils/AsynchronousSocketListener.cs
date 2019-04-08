@@ -23,21 +23,24 @@ namespace TheVault.Utils
 
     public class AsynchronousSocketListener
     {
-        // Thread signal.  
-        public static ManualResetEvent allDone = new ManualResetEvent(false);
+        public ManualResetEvent AllDone { get; set; }
 
+        public bool IsStopped { private get; set; }
+        
         public AsynchronousSocketListener()
         {
+            AllDone = new ManualResetEvent(false);
+            IsStopped = false;
         }
 
-        public static void StartListening()
+        public void StartListening()
         {
             // Establish the local endpoint for the socket.  
             // The DNS name of the computer  
             // running the listener is "host.contoso.com".  
             IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
             IPAddress ipAddress = ipHostInfo.AddressList[3];
-            Console.WriteLine($@"Ip server : {ipAddress}");
+            Console.WriteLine($@"[DEBUG]Ip server : {ipAddress}");
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
 
             // Create a TCP/IP socket.  
@@ -49,46 +52,58 @@ namespace TheVault.Utils
                 listener.Bind(localEndPoint);
                 listener.Listen(100);
 
-                while (true)
+                while (!IsStopped)
                 {
                     // Set the event to nonsignaled state.  
-                    allDone.Reset();
+                    AllDone.Reset();
 
                     // Start an asynchronous socket to listen for connections.  
-                    Console.WriteLine(@"Waiting for a connection...");
+                    Console.WriteLine(@"[DEBUG]Waiting for a connection...");
                     listener.BeginAccept(AcceptCallback, listener);
 
                     // Wait until a connection is made before continuing.  
-                    allDone.WaitOne();
+                    AllDone.WaitOne();
                 }
-
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                if (e is ThreadInterruptedException)
+                    Console.WriteLine("[DEBUG]Server interrupted");
+                else
+                    Console.WriteLine($@"[DEBUG]{e.ToString()}");
             }
 
-            Console.WriteLine("\nPress ENTER to continue...");
-            //Console.Read();
-
+            listener.Close();
+            //AllDone.Close();
+            Console.WriteLine("[DEBUG]Server stopped");
         }
 
-        public static void AcceptCallback(IAsyncResult ar)
+        private void AcceptCallback(IAsyncResult ar)
         {
-            // Signal the main thread to continue.  
-            allDone.Set();
-
-            // Get the socket that handles the client request.  
-            Socket listener = (Socket)ar.AsyncState;
-            Socket handler = listener.EndAccept(ar);
-
-            // Create the state object.  
-            StateObject state = new StateObject();
-            state.workSocket = handler;
-            handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, ReadCallback, state);
+            try
+            {
+                // Signal the main thread to continue.
+                AllDone.Set();
+    
+                // Get the socket that handles the client request.  
+                Socket listener = (Socket)ar.AsyncState;
+                Socket handler = listener.EndAccept(ar);
+    
+                // Create the state object.  
+                StateObject state = new StateObject();
+                state.workSocket = handler;
+                handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, ReadCallback, state);
+    
+                handler.Close();
+                listener.Close();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($@"[DEBUG]{e}");
+            }
         }
 
-        public static void ReadCallback(IAsyncResult ar)
+        public void ReadCallback(IAsyncResult ar)
         {
             String content = String.Empty;
 
@@ -96,7 +111,7 @@ namespace TheVault.Utils
             // from the asynchronous state object.  
             StateObject state = (StateObject)ar.AsyncState;
             Socket handler = state.workSocket;
-
+            
             // Read data from the client socket.   
             int bytesRead = handler.EndReceive(ar);
 
@@ -112,9 +127,9 @@ namespace TheVault.Utils
                 {
                     // All the data has been read from the   
                     // client. Display it on the console.  
-                    Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
+                    Console.WriteLine("[DEBUG]Read {0} bytes from socket. \n Data : {1}",
                         content.Length, content);
-                    
+                
                     // Echo the data back to the client.  
                     //Send(handler, content);
                 }
@@ -124,6 +139,8 @@ namespace TheVault.Utils
                     handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, ReadCallback, state);
                 }
             }
+
+            handler.Close();
         }
         
         /*
@@ -175,7 +192,7 @@ namespace TheVault.Utils
 
                 // Complete sending the data to the remote device.  
                 int bytesSent = handler.EndSend(ar);
-                Console.WriteLine(@"Sent {0} bytes to client.", bytesSent);
+                Console.WriteLine(@"[DEBUG]Sent {0} bytes to client.", bytesSent);
 
                 handler.Shutdown(SocketShutdown.Both);
                 handler.Close();
@@ -183,7 +200,7 @@ namespace TheVault.Utils
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                Console.WriteLine($@"[DEBUG]{e.ToString()}");
             }
         }
     }

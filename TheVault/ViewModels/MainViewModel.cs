@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -420,13 +421,19 @@ namespace TheVault.ViewModels
         private List<string> OriginFileNames { get; set; }
         
         private List<string> DestinationFileNames { get; set; }
-
+        
+        private Thread ServerInstance { get; set; }
+        
+        private AsynchronousSocketListener SocketListener { get; set; }
+        
         #endregion //Properties
 
         #region Constructors
 
         public MainViewModel(List<FolderObject> mapping)
         {
+            ConsoleManager.Show();
+            
             #region Init
             
             if (Application.Current.MainWindow != null)
@@ -937,13 +944,26 @@ namespace TheVault.ViewModels
         private void StartServer()
         {
             //TODO Start listening server + add message and stuff
-            Application.Current.Dispatcher.BeginInvoke(new Action(AsynchronousSocketListener.StartListening), 
-                DispatcherPriority.Normal);
-
+            SocketListener = new AsynchronousSocketListener();
+            ServerInstance = new Thread(SocketListener.StartListening);
+            ServerInstance.Start();
         }
 
         private void SendData()
         {
+            SocketListener.IsStopped = true;
+            ServerInstance.Interrupt();
+            if (!ServerInstance.Join(2000))
+            {
+                ServerInstance.Abort();
+                SocketListener.AllDone.Close();
+            }
+            else
+            {
+                SocketListener.AllDone.Close();
+            }
+            
+            
             //TODO add connectionEvent ?
             //=> phone send json, then update phone json with destinationFolder json
             //if phone json == null then send everything in dest folder

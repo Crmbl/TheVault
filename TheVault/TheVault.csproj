@@ -108,6 +108,7 @@
     </ApplicationDefinition>
     <Compile Include="Objects\FileObject.cs" />
     <Compile Include="Objects\FolderObject.cs" />
+    <Compile Include="Utils\ConsoleManager.cs" />
     <Compile Include="Utils\FileUtil.cs" />
     <Compile Include="Utils\MD5Util.cs" />
     <Compile Include="ViewModels\FileViewModel.cs" />
