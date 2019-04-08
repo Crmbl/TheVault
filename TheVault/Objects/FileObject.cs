@@ -1,11 +1,13 @@
-﻿namespace TheVault.Objects
+﻿// ReSharper disable InconsistentNaming
+
+namespace TheVault.Objects
 {
     public class FileObject
     {
-        public string OriginName { get; set; }
-        public string UpdatedName { get; set; }
-        public string Width { get; set; }
-        public string Height { get; set; }
+        public string originName { get; set; }
+        public string updatedName { get; set; }
+        public string width { get; set; }
+        public string height { get; set; }
 
         public FileObject()
         {

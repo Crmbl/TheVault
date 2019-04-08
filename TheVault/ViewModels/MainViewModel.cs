@@ -667,12 +667,12 @@ namespace TheVault.ViewModels
             if (Mapping != null)
             {
                 var mappingFiles = new List<FileObject>();
-                Mapping.ForEach(fo => mappingFiles.AddRange(fo.Files));
+                Mapping.ForEach(fo => mappingFiles.AddRange(fo.files));
 
                 foreach (var file in files)
                 {
                     var isEnabled = FileUtil.FileExtensions.Contains(file.Extension);
-                    var fileViewModel = mappingFiles.Any(f => f.OriginName == file.Name) ? 
+                    var fileViewModel = mappingFiles.Any(f => f.originName == file.Name) ? 
                         new FileViewModel(isEnabled, file.Name, file.DirectoryName?.Remove(0, BasePath.Length)) : 
                         new FileViewModel(isEnabled, file.Name, file.DirectoryName?.Remove(0, BasePath.Length), isEnabled);
                     
@@ -779,10 +779,10 @@ namespace TheVault.ViewModels
 
                             mapping = JsonConvert.DeserializeObject<List<FolderObject>>(
                                 File.ReadAllText($"{VaultPath}\\mapping.json"));
-                            var tmpFolder = mapping.FirstOrDefault(f => f.Name == "Origin");
-                            var mappingEntry = tmpFolder?.Files.FirstOrDefault(f => f.OriginName == "mapping.json");
+                            var tmpFolder = mapping.FirstOrDefault(f => f.name == "Origin");
+                            var mappingEntry = tmpFolder?.files.FirstOrDefault(f => f.originName == "mapping.json");
                             if (mappingEntry != null)
-                                tmpFolder.Files.Remove(mappingEntry);
+                                tmpFolder.files.Remove(mappingEntry);
 
                             //Add the new entries in the Json file and encrypt missing files
                             foreach (var fileName in result)
@@ -804,17 +804,17 @@ namespace TheVault.ViewModels
                                 var cipheredName = EncryptionUtil.Encipher(tmpName, 10);
                                 File.WriteAllBytes($"{VaultPath}\\{cipheredName}", encryptedFile);
 
-                                var folderObject = mapping.FirstOrDefault(f => f.Name == file.Directory?.Name);
+                                var folderObject = mapping.FirstOrDefault(f => f.name == file.Directory?.Name);
                                 if (folderObject == null)
                                 {
                                     folderObject = new FolderObject(file.Directory?.Name, "");
                                     mapping.Add(folderObject);
                                 }
 
-                                folderObject.Files.Add(new FileObject
+                                folderObject.files.Add(new FileObject
                                 {
-                                    OriginName = file.Name,
-                                    UpdatedName = fileName
+                                    originName = file.Name,
+                                    updatedName = fileName
                                 });
 
                                 ProgressBarValue++;
@@ -845,17 +845,17 @@ namespace TheVault.ViewModels
                                 File.WriteAllBytes($"{VaultPath}\\{cipheredName}", encryptedFile);
 
                                 var fName = file.Path.Contains("\\") ? file.Path.Split('\\').Last() : file.Path;
-                                var folderObject = mapping.FirstOrDefault(f => f.Name == fName);
+                                var folderObject = mapping.FirstOrDefault(f => f.name == fName);
                                 if (folderObject == null)
                                 {
                                     folderObject = new FolderObject(fName, file.Path);
                                     mapping.Add(folderObject);
                                 }
 
-                                folderObject.Files.Add(new FileObject
+                                folderObject.files.Add(new FileObject
                                 {
-                                    OriginName = file.FileName,
-                                    UpdatedName = fileName
+                                    originName = file.FileName,
+                                    updatedName = fileName
                                 });
 
                                 ProgressBarValue++;
@@ -886,17 +886,17 @@ namespace TheVault.ViewModels
         {
             foreach (var folder in mapping)
             {
-                foreach (var file in folder.Files)
+                foreach (var file in folder.files)
                 {
-                    var fullPathToFile = $"{BasePath}{folder.FullPath}\\{file.OriginName}";
+                    var fullPathToFile = $"{BasePath}{folder.fullPath}\\{file.originName}";
                     try
                     {
                         using (Stream stream = File.OpenRead(fullPathToFile))
                         {
                             using (var srcImg = Image.FromStream(stream, false, false))
                             {
-                                file.Width = srcImg.Width.ToString();
-                                file.Height = srcImg.Height.ToString();
+                                file.width = srcImg.Width.ToString();
+                                file.height = srcImg.Height.ToString();
                             }
                         }
                     }
@@ -907,8 +907,8 @@ namespace TheVault.ViewModels
 
                         if (inputFile.Metadata?.VideoData == null) continue;
                         var size = inputFile.Metadata.VideoData.FrameSize.Split('x');
-                        file.Width = size.First();
-                        file.Height = size.Last();
+                        file.width = size.First();
+                        file.height = size.Last();
                     }
 
                     ProgressBarValue++;
@@ -979,17 +979,17 @@ namespace TheVault.ViewModels
                     ServerMessage = file.FileName;
 
                     var fName = file.Path.Contains("\\") ? file.Path.Split('\\').Last() : file.Path;
-                    var folderObject = mapping.FirstOrDefault(f => f.Name == fName);
+                    var folderObject = mapping.FirstOrDefault(f => f.name == fName);
                     if (folderObject == null)
                     {
                         folderObject = new FolderObject(fName, file.Path);
                         mapping.Add(folderObject);
                     }
                     
-                    folderObject.Files.Add(new FileObject
+                    folderObject.files.Add(new FileObject
                     {
-                        OriginName = file.FileName,
-                        UpdatedName = fileName
+                        originName = file.FileName,
+                        updatedName = fileName
                     });
 
                     ProgressBarValue++;

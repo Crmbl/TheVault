@@ -176,10 +176,10 @@ namespace TheVault.ViewModels
         {
             foreach (var folder in mapping)
             {
-                foreach (var file in folder.Files)
+                foreach (var file in folder.files)
                 {
-                    if (file.UpdatedName == fileName)
-                        return new []{folder.FullPath, file.OriginName};
+                    if (file.updatedName == fileName)
+                        return new []{folder.fullPath, file.originName};
                 }
             }
 

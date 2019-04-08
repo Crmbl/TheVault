@@ -1,23 +1,24 @@
 ﻿using System.Collections.Generic;
+// ReSharper disable InconsistentNaming
 
 namespace TheVault.Objects
 {
     public class FolderObject
     {
-        public string Name { get; set; }
-        public string FullPath { get; set; }
-        public List<FileObject> Files { get; set; }
+        public string name { get; set; }
+        public string fullPath { get; set; }
+        public List<FileObject> files { get; set; }
 
         public FolderObject()
         {
-            Files = new List<FileObject>();
+            files = new List<FileObject>();
         }
 
         public FolderObject(string name, string fullPath)
         {
-            Name = name;
-            FullPath = fullPath;
-            Files = new List<FileObject>();
+            this.name = name;
+            this.fullPath = fullPath;
+            files = new List<FileObject>();
         }
     }
 }
