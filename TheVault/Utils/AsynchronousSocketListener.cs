@@ -19,7 +19,6 @@ namespace TheVault.Utils
         // Received data string.  
         public StringBuilder StringBuilder = new StringBuilder();
     }
-    
 
     public class AsynchronousSocketListener
     {
@@ -38,8 +37,8 @@ namespace TheVault.Utils
             // Establish the local endpoint for the socket.  
             // The DNS name of the computer  
             var ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            var ipAddress = ipHostInfo.AddressList.Last();//ipHostInfo.AddressList[3];
-            ConsoleManager.WriteLine($"Ip server : {ipAddress}");
+            var ipAddress = ipHostInfo.AddressList.Last();
+            ConsoleManager.WriteLine($"=== Ip server : {ipAddress} ===");
             var localEndPoint = new IPEndPoint(ipAddress, 11000);
 
             // Create a TCP/IP socket.  
@@ -53,7 +52,6 @@ namespace TheVault.Utils
 
                 while (!IsStopped)
                 {
-                    // Set the event to non signaled state.  
                     AllDone.Reset();
 
                     // Start an asynchronous socket to listen for connections.  
@@ -66,35 +64,36 @@ namespace TheVault.Utils
             }
             catch (Exception e)
             {
-                ConsoleManager.WriteLine(e is ThreadInterruptedException ? "Server interrupted" : $"{e}");
+                ConsoleManager.WriteLine(e is ThreadInterruptedException ? "*Server interrupted" : $"{e}");
             }
 
-            //listener.Close();
-            //AllDone.Close();
-            ConsoleManager.WriteLine("Server stopped");
+            listener.Close();
+            AllDone.Close();
+            AllDone = null;
+            ConsoleManager.WriteLine("**Server stopped");
         }
 
         private void AcceptCallback(IAsyncResult ar)
         {
             try
             {
-                // Signal the main thread to continue.
                 AllDone.Set();
-    
+
                 // Get the socket that handles the client request.  
                 var listener = (Socket)ar.AsyncState;
                 var handler = listener.EndAccept(ar);
     
                 // Create the state object.  
                 var state = new StateObject {WorkSocket = handler};
+                ConsoleManager.WriteLine($"-- Begin receive");
                 handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0, ReadCallback, state);
-    
-                handler.Close();
-                listener.Close();
             }
             catch (Exception e)
             {
-                ConsoleManager.WriteLine($"{e}");
+                if (e is NullReferenceException || e is ObjectDisposedException)
+                    ConsoleManager.WriteLine("***Listener forced EndAccept");
+                else
+                    ConsoleManager.WriteLine($"{e}");
             }
         }
 
@@ -120,7 +119,8 @@ namespace TheVault.Utils
                 {
                     // All the data has been read from the   
                     // client. Display it on the console.  
-                    ConsoleManager.WriteLine($"Read {content.Length} bytes from socket. \n Data : {content}");
+                    ConsoleManager.WriteLine($"-- Read {content.Length} bytes from socket.");
+                    ConsoleManager.WriteLine($"-- Data : {content}");
                 
                     // Echo the data back to the client.  
                     //Send(handler, content);
@@ -131,8 +131,6 @@ namespace TheVault.Utils
                     handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0, ReadCallback, state);
                 }
             }
-
-            handler.Close();
         }
         
         /*

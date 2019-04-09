@@ -942,9 +942,9 @@ namespace TheVault.ViewModels
                 File.Delete($"{VaultPath}\\mapping.json");
         }
 
+        //TODO Start listening server + add message and stuff
         private void StartServer()
         {
-            //TODO Start listening server + add message and stuff
             SocketListener = new AsynchronousSocketListener();
             ServerInstance = new Thread(SocketListener.StartListening);
             ServerInstance.Start();
@@ -955,14 +955,9 @@ namespace TheVault.ViewModels
             SocketListener.IsStopped = true;
             ServerInstance.Interrupt();
             if (!ServerInstance.Join(2000))
-            {
                 ServerInstance.Abort();
-                //SocketListener.AllDone.Close();
-            }
-            /*else
-            {
-                SocketListener.AllDone.Close();
-            }*/
+
+            ServerInstance = null;
             
             //TODO add connectionEvent ?
             //=> phone send json, then update phone json with destinationFolder json
