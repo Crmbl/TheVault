@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading;
 using MediaToolkit;
 using MediaToolkit.Model;
 using Newtonsoft.Json;
@@ -432,8 +431,6 @@ namespace TheVault.ViewModels
 
         public MainViewModel(List<FolderObject> mapping)
         {
-            ConsoleManager.Show();
-            
             #region Init
             
             if (Application.Current.MainWindow != null)
@@ -443,6 +440,10 @@ namespace TheVault.ViewModels
                 Application.Current.ShutdownMode = ShutdownMode.OnLastWindowClose;
                 Application.Current.MainWindow.Closing += OnClosing;
                 Application.Current.MainWindow.Closed += OnClosed;
+                
+                var left = (int)Math.Round(Application.Current.MainWindow.Left + Application.Current.MainWindow.Width);
+                var top = (int)Math.Round(Application.Current.MainWindow.Top);
+                ConsoleManager.Show(left, top);
             }
             
             Mapping = mapping ?? new List<FolderObject>();
@@ -956,13 +957,12 @@ namespace TheVault.ViewModels
             if (!ServerInstance.Join(2000))
             {
                 ServerInstance.Abort();
-                SocketListener.AllDone.Close();
+                //SocketListener.AllDone.Close();
             }
-            else
+            /*else
             {
                 SocketListener.AllDone.Close();
-            }
-            
+            }*/
             
             //TODO add connectionEvent ?
             //=> phone send json, then update phone json with destinationFolder json

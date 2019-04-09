@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -9,93 +10,106 @@ namespace TheVault.Utils
     [SuppressUnmanagedCodeSecurity]
     public static class ConsoleManager
     {
-        private const string Kernel32_DllName = "kernel32.dll";
+        private const string Kernel32DllName = "kernel32.dll";
+        private const string User32DllName = "user32.dll";
+        private const int SwpNoZOrder = 0x4;
+        private const int SwpNoActivate = 0x10;
+        
+        public static bool HasConsole => GetConsoleWindow() != IntPtr.Zero;
     
-        [DllImport(Kernel32_DllName)]
+        #region DLL Imports
+    
+        [DllImport(Kernel32DllName)]
         private static extern bool AllocConsole();
     
-        [DllImport(Kernel32_DllName)]
+        [DllImport(Kernel32DllName)]
         private static extern bool FreeConsole();
     
-        [DllImport(Kernel32_DllName)]
+        [DllImport(Kernel32DllName)]
         private static extern IntPtr GetConsoleWindow();
+        
+        [DllImport(User32DllName)]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, int flags);
     
-        [DllImport(Kernel32_DllName)]
-        private static extern int GetConsoleOutputCP();
-    
-        public static bool HasConsole
-        {
-            get { return GetConsoleWindow() != IntPtr.Zero; }
-        }
-    
+        #endregion DLL imports
+        
+        #region Public methods
+        
         /// <summary>
         /// Creates a new console instance if the process is not attached to a console already.
         /// </summary>
-        public static void Show()
+        public static void Show(int left, int top)
         {
             //#if DEBUG
-            if (!HasConsole)
-            {
-                AllocConsole();
-                InvalidateOutAndError();
-            }
+            if (HasConsole) return;
+            AllocConsole();
+            InvalidateOutAndError();
+            SetConsoleInformation(left, top);
             //#endif
         }
     
         /// <summary>
-        /// If the process has a console attached to it, it will be detached and no longer visible. Writing to the System.Console is still possible, but no output will be shown.
+        /// If the process has a console attached to it, it will be detached and no longer visible.
+        /// Writing to the System.Console is still possible, but no output will be shown.
         /// </summary>
         public static void Hide()
         {
             //#if DEBUG
-            if (HasConsole)
-            {
-                SetOutAndErrorNull();
-                FreeConsole();
-            }
+            if (!HasConsole) return;
+            SetOutAndErrorNull();
+            FreeConsole();
             //#endif
         }
-    
-        public static void Toggle()
+
+        public static void WriteLine(string value)
         {
-            if (HasConsole)
-            {
-                Hide();
-            }
-            else
-            {
-                Show();
-            }
+            Console.WriteLine($@"[DEBUG] {value}");
         }
     
-        static void InvalidateOutAndError()
+        #endregion Public methods
+        
+        #region Private methods
+        
+        private static void InvalidateOutAndError()
         {
-            Type type = typeof(System.Console);
-    
-            System.Reflection.FieldInfo _out = type.GetField("_out",
-                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
-    
-            System.Reflection.FieldInfo _error = type.GetField("_error",
-                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
-    
-            System.Reflection.MethodInfo _InitializeStdOutError = type.GetMethod("InitializeStdOutError",
-                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+            var type = typeof(Console);
+            var _out = type.GetField("_out", BindingFlags.Static | BindingFlags.NonPublic);
+            var error = type.GetField("_error", BindingFlags.Static | BindingFlags.NonPublic);
+            var initializeStdOutError = type.GetMethod("InitializeStdOutError", BindingFlags.Static | BindingFlags.NonPublic);
     
             Debug.Assert(_out != null);
-            Debug.Assert(_error != null);
-    
-            Debug.Assert(_InitializeStdOutError != null);
+            Debug.Assert(error != null);
+            Debug.Assert(initializeStdOutError != null);
     
             _out.SetValue(null, null);
-            _error.SetValue(null, null);
+            error.SetValue(null, null);
     
-            _InitializeStdOutError.Invoke(null, new object[] { true });
+            initializeStdOutError.Invoke(null, new object[] { true });
         }
     
-        static void SetOutAndErrorNull()
+        private static void SetOutAndErrorNull()
         {
             Console.SetOut(TextWriter.Null);
             Console.SetError(TextWriter.Null);
         }
+        
+        private static void SetConsoleInformation(int x, int y)
+        {
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            // ReSharper disable once LocalizableElement
+            Console.Title = "TheVault Output";
+            
+            var height = 300;
+            var width = 700;
+            Console.BufferWidth = 80;
+            Console.BufferHeight = 300;
+            SetWindowPos(GetConsoleWindow(), 
+                        IntPtr.Zero, x, y, 
+                        width, height, 
+                        SwpNoZOrder | SwpNoActivate);
+        }
+        
+        #endregion Private methods
     } 
 }
