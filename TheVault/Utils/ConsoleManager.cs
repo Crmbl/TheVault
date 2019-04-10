@@ -102,8 +102,6 @@ namespace TheVault.Utils
             
             var height = 300;
             var width = 700;
-            //Console.BufferWidth = 50;
-            //Console.BufferHeight = 300;
             SetWindowPos(GetConsoleWindow(), 
                         IntPtr.Zero, x, y, 
                         width, height, 

@@ -7,7 +7,6 @@ using System.Threading;
 
 namespace TheVault.Utils
 {
-    // State object for reading client data asynchronously  
     public class StateObject
     {
         // Client  socket.  
@@ -34,17 +33,13 @@ namespace TheVault.Utils
 
         public void StartListening()
         {
-            // Establish the local endpoint for the socket.  
-            // The DNS name of the computer  
             var ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
             var ipAddress = ipHostInfo.AddressList.Last();
-            ConsoleManager.WriteLine($"=== Ip server : {ipAddress} ===");
-            var localEndPoint = new IPEndPoint(ipAddress, 11000);
-
-            // Create a TCP/IP socket.  
+            var portNumber = 11000;
+            ConsoleManager.WriteLine($"=== Ip server : {ipAddress}:{portNumber} ===");
+            var localEndPoint = new IPEndPoint(ipAddress, portNumber);
             var listener = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
-            // Bind the socket to the local endpoint and listen for incoming connections.  
             try
             {
                 listener.Bind(localEndPoint);
@@ -54,11 +49,9 @@ namespace TheVault.Utils
                 {
                     AllDone.Reset();
 
-                    // Start an asynchronous socket to listen for connections.  
                     ConsoleManager.WriteLine("Waiting for a connection...");
                     listener.BeginAccept(AcceptCallback, listener);
 
-                    // Wait until a connection is made before continuing.  
                     AllDone.WaitOne();
                 }
             }
@@ -79,11 +72,9 @@ namespace TheVault.Utils
             {
                 AllDone.Set();
 
-                // Get the socket that handles the client request.  
                 var listener = (Socket)ar.AsyncState;
                 var handler = listener.EndAccept(ar);
     
-                // Create the state object.  
                 var state = new StateObject {WorkSocket = handler};
                 ConsoleManager.WriteLine($"-- Begin receive");
                 handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0, ReadCallback, state);
@@ -99,26 +90,34 @@ namespace TheVault.Utils
 
         public void ReadCallback(IAsyncResult ar)
         {
-            // Retrieve the state object and the handler socket  
-            // from the asynchronous state object.  
             var state = (StateObject)ar.AsyncState;
             var handler = state.WorkSocket;
             
-            // Read data from the client socket.   
             var bytesRead = handler.EndReceive(ar);
 
             if (bytesRead > 0)
             {
+                //TODO first, hello world,
+                //TODO then, json file name + json size + json bytes
+                
                 // There  might be more data, so store the data received so far.  
-                state.StringBuilder.Append(Encoding.ASCII.GetString(state.Buffer, 0, bytesRead));
-
-                // Check for end-of-file tag. If it is not there, read   
-                // more data.  
+                state.StringBuilder.Append(Encoding.UTF8.GetString(state.Buffer, 0, bytesRead));
+                try
+                {
+                    //Need tests
+                    var t = BitConverter.ToInt64(state.Buffer, 0);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
+                
+                // Check for end-of-file tag. If it is not there, read more data.  
                 var content = state.StringBuilder.ToString();
                 if (content.IndexOf("<EOF>", StringComparison.Ordinal) > -1)
                 {
-                    // All the data has been read from the   
-                    // client. Display it on the console.  
+                    // All the data has been read from the client. Display it on the console.  
                     ConsoleManager.WriteLine($"-- Read {content.Length} bytes from socket.");
                     ConsoleManager.WriteLine($"-- Data : {content}");
                 
@@ -136,10 +135,6 @@ namespace TheVault.Utils
         /*
             int bytesRead;
             int current = 0;
-         
-            ServerSocket serverSocket = null;
-            serverSocket = new ServerSocket(13267);
-               
             while(true) {
                 Socket clientSocket = null;
                 clientSocket = serverSocket.accept();
