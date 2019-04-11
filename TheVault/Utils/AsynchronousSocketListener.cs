@@ -17,6 +17,10 @@ namespace TheVault.Utils
         public byte[] Buffer = new byte[BufferSize];
         // Received data string.  
         public StringBuilder StringBuilder = new StringBuilder();
+        // Received data long.
+        public long Size = 0;
+        // Received bytes.
+        public byte[] FileData = null;
     }
 
     public class AsynchronousSocketListener
@@ -100,22 +104,27 @@ namespace TheVault.Utils
                 //TODO first, hello world,
                 //TODO then, json file name + json size + json bytes
                 
-                // There  might be more data, so store the data received so far.  
-                state.StringBuilder.Append(Encoding.UTF8.GetString(state.Buffer, 0, bytesRead));
                 try
                 {
-                    //Need tests
-                    var t = BitConverter.ToInt64(state.Buffer, 0);
+                    if (string.IsNullOrWhiteSpace(state.StringBuilder.ToString()))
+                        state.StringBuilder.Append(Encoding.UTF8.GetString(state.Buffer, 0, bytesRead));
+                    else if (state.Size == 0 && !string.IsNullOrWhiteSpace(state.StringBuilder.ToString()))
+                        state.Size = BitConverter.ToInt64(state.Buffer.Take(bytesRead).Reverse().ToArray(), 0);
+                    else if (state.FileData == null && state.Size != 0)
+                        state.FileData = new byte[state.Size];
+
+                    if (state.FileData != null)
+                        state.FileData = state.FileData.Concat(state.Buffer).ToArray();
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
+                    ConsoleManager.WriteLine($"{e}");
                     throw;
                 }
                 
-                // Check for end-of-file tag. If it is not there, read more data.  
                 var content = state.StringBuilder.ToString();
-                if (content.IndexOf("<EOF>", StringComparison.Ordinal) > -1)
+                if (content.IndexOf("<EOF>", StringComparison.Ordinal) > -1 ||
+                    state.FileData != null && state.Size != 0 && state.FileData.Length == state.Size)
                 {
                     // All the data has been read from the client. Display it on the console.  
                     ConsoleManager.WriteLine($"-- Read {content.Length} bytes from socket.");
