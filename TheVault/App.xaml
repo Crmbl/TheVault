@@ -95,7 +95,7 @@
             <Setter Property="Height" Value="20"/>
             <Setter Property="materialDesign:ShadowAssist.ShadowDepth" Value="Depth2" />
         </Style>
-
+        
         <Style x:Key="SendButton" TargetType="Button"
                BasedOn="{StaticResource MaterialDesignRaisedButton}">
             <Setter Property="Padding" Value="8,2"/>

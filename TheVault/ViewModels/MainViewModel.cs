@@ -22,6 +22,8 @@ namespace TheVault.ViewModels
     {        
         #region Instance variables
 
+        private string _serverText;
+        
         private string _originPath;
 
         private string _destinationPath;
@@ -84,6 +86,17 @@ namespace TheVault.ViewModels
 
         #region Properties
 
+        public string ServerText
+        {
+            get => _serverText;
+            set
+            {
+                if (_serverText == value) return;
+                _serverText = value;
+                NotifyPropertyChanged("ServerText");
+            }
+        }
+        
         public string OriginPath
         {
             get => _originPath;
@@ -215,7 +228,7 @@ namespace TheVault.ViewModels
                 NotifyPropertyChanged("StartServerCmd");
             }
         }
-        
+
         public RelayCommand CloseDialogCmd
         {
             get => _closeDialogCmd;
@@ -404,6 +417,8 @@ namespace TheVault.ViewModels
         }
 
         private List<FolderObject> Mapping { get; set; }
+        
+        private List<FolderObject> DownloadedMapping { get; set; }
 
         public bool OriginFolderEmpty => !DecryptedFiles.Any();
         
@@ -463,6 +478,7 @@ namespace TheVault.ViewModels
             DestinationFileNames = new DirectoryInfo(DestinationPath).EnumerateFiles("*", 
                 SearchOption.AllDirectories).Select(f => f.Name).ToList();
             
+            ServerText = "START SERVER";
             BackingUpFiles = false;
             AllSelected = false;
             ShowProgressBar = false;
@@ -942,23 +958,70 @@ namespace TheVault.ViewModels
                 File.Delete($"{VaultPath}\\mapping.json");
         }
 
-        //TODO Start listening server + add message and stuff
         private void StartServer()
         {
-            SocketListener = new AsynchronousSocketListener();
-            ServerInstance = new Thread(SocketListener.StartListening);
-            ServerInstance.Start();
+            //TODO change color of button too ?
+            if (SocketListener == null)
+            {
+                ServerText = "KILL SERVER";
+                ProgressBarMax = 0;
+                ProgressBarValue = 0;
+                SocketListener = new AsynchronousSocketListener 
+                    {SocketCallback = new RelayCommand(true, ServerCallback)};
+                ServerInstance = new Thread(SocketListener.StartListening);
+                ServerInstance.Start();
+            }
+            else
+            {
+                ServerText = "START SERVER";
+                SocketListener.IsStopped = true;
+                ServerInstance.Interrupt();
+                if (!ServerInstance.Join(2000))
+                    ServerInstance.Abort();
+
+                ServerInstance = null;
+                SocketListener = null;
+                Task.Delay(2500).ContinueWith(_ =>
+                {
+                    ServerMessage = "";
+                    ProgressBarMax = 0;
+                    ProgressBarValue = 0;
+                    ShowProgressBar = false;
+                });
+            }
+        }
+
+        private void ServerCallback(object info)
+        {
+            switch (info)
+            {
+                case string message:
+                    ServerMessage = message;
+                    break;
+                case long value:
+                    ProgressBarMax = Convert.ToInt32(value);
+                    ShowProgressBar = true;
+                    break;
+                case int value:
+                    ProgressBarValue = value;
+                    break;
+                case byte[] jsonBytes:
+                    DecryptDownloadedJson(jsonBytes);
+                    break;
+            }
+            
+            if (ServerMessage.Contains("Socket transfer is done"))
+                Task.Delay(2500).ContinueWith(_ =>
+                {
+                    ServerMessage = "";
+                    ProgressBarMax = 0;
+                    ProgressBarValue = 0;
+                    ShowProgressBar = false;
+                });
         }
 
         private void SendData()
         {
-            SocketListener.IsStopped = true;
-            ServerInstance.Interrupt();
-            if (!ServerInstance.Join(2000))
-                ServerInstance.Abort();
-
-            ServerInstance = null;
-            
             //TODO add connectionEvent ?
             //=> phone send json, then update phone json with destinationFolder json
             //if phone json == null then send everything in dest folder
@@ -1018,6 +1081,19 @@ namespace TheVault.ViewModels
                 OnEncryptFinished.Execute(DecryptedFiles.Count(f => f.IsSelected));
                 GetDestinationFolder();
             });
+        }
+
+        public async void DecryptDownloadedJson(byte[] jsonBytes)
+        {
+            await Task.Run(() =>
+            {
+                var originDir = new DirectoryInfo(OriginPath);
+                var mFile = EncryptionUtil.DecryptBytes(jsonBytes, PassValue, SaltValue);
+                File.WriteAllBytes($"{originDir.FullName}\\downloadedMapping.json", mFile);
+                DownloadedMapping = JsonConvert.DeserializeObject<List<FolderObject>>(
+                    File.ReadAllText($"{originDir.FullName}\\downloadedMapping.json"));
+            });
+            //TODO update json with content from dest folder ?
         }
         
         #endregion //Async methods
