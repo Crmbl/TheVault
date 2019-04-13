@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-// ReSharper disable InconsistentNaming
 
+// ReSharper disable InconsistentNaming
 namespace TheVault.Objects
 {
     public class FolderObject
@@ -19,6 +19,15 @@ namespace TheVault.Objects
             this.name = name;
             this.fullPath = fullPath;
             files = new List<FileObject>();
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is FolderObject folder))
+                return base.Equals(obj);
+
+            return folder.name == this.name
+                   && folder.fullPath == this.fullPath;
         }
     }
 }

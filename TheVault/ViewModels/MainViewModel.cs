@@ -761,6 +761,135 @@ namespace TheVault.ViewModels
             foreach (var folder in destinationFolder.EnumerateDirectories())
                 folder.Delete(true);
         }
+        
+        private void GetMediaSize(List<FolderObject> mapping, bool onClosing = false)
+        {
+            foreach (var folder in mapping)
+            {
+                foreach (var file in folder.files)
+                {
+                    var fullPathToFile = $"{BasePath}{folder.fullPath}\\{file.originName}";
+                    try
+                    {
+                        using (Stream stream = File.OpenRead(fullPathToFile))
+                        {
+                            using (var srcImg = Image.FromStream(stream, false, false))
+                            {
+                                file.width = srcImg.Width.ToString();
+                                file.height = srcImg.Height.ToString();
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        var inputFile = new MediaFile { Filename = fullPathToFile };
+                        using (var engine = new Engine()) { engine.GetMetadata(inputFile); }
+
+                        if (inputFile.Metadata?.VideoData == null) continue;
+                        var size = inputFile.Metadata.VideoData.FrameSize.Split('x');
+                        file.width = size.First();
+                        file.height = size.Last();
+                    }
+
+                    ProgressBarValue++;
+                }
+            }
+
+            GenerateJson(mapping, onClosing);
+        }
+
+        private void GenerateJson(List<FolderObject> mapping, bool onClosing = false)
+        {
+            var json = JsonConvert.SerializeObject(mapping, Formatting.Indented);
+            var path = onClosing ? VaultPath : DestinationPath;
+            var jsonFile = $"{path}\\{EncryptionUtil.Encipher("mapping.json", 10)}";
+            File.WriteAllText(jsonFile, json);
+
+            var bytes = Encoding.UTF8.GetBytes(File.ReadAllText(jsonFile));
+            var resultEncrypt = EncryptionUtil.EncryptBytes(bytes, PassValue, SaltValue);
+            File.WriteAllBytes(jsonFile, resultEncrypt);
+            ProgressBarValue++;
+            
+            var destDir = new DirectoryInfo(DestinationPath);
+            if (destDir.EnumerateFiles().Any(f => EncryptionUtil.Decipher(f.Name, 10) == "mobileMapping.json"))
+                EditJson();
+            if (onClosing)
+                File.Delete($"{VaultPath}\\mapping.json");
+        }
+
+        private void StartServer()
+        {
+            //TODO change color of button too ?
+            if (SocketListener == null)
+            {
+                ServerText = "KILL SERVER";
+                ProgressBarMax = 0;
+                ProgressBarValue = 0;
+                SocketListener = new AsynchronousSocketListener 
+                    {SocketCallback = new RelayCommand(true, ServerCallback)};
+                ServerInstance = new Thread(SocketListener.StartListening);
+                ServerInstance.Start();
+            }
+            else
+            {
+                ServerText = "START SERVER";
+                SocketListener.IsStopped = true;
+                ServerInstance.Interrupt();
+                if (!ServerInstance.Join(2000))
+                    ServerInstance.Abort();
+
+                ServerInstance = null;
+                SocketListener = null;
+                Task.Delay(2500).ContinueWith(_ =>
+                {
+                    ServerMessage = "";
+                    ProgressBarMax = 0;
+                    ProgressBarValue = 0;
+                    ShowProgressBar = false;
+                });
+            }
+        }
+
+        private void ServerCallback(object info)
+        {
+            switch (info)
+            {
+                case string message:
+                    ServerMessage = message;
+                    break;
+                case long value:
+                    ProgressBarMax = Convert.ToInt32(value);
+                    ShowProgressBar = true;
+                    break;
+                case int value:
+                    ProgressBarValue = value;
+                    break;
+                case byte[] jsonBytes:
+                    DecryptDownloadedJson(jsonBytes);
+                    break;
+            }
+            
+            if (ServerMessage.Contains("Socket transfer is done"))
+                Task.Delay(2500).ContinueWith(_ =>
+                {
+                    ServerMessage = "";
+                    ProgressBarMax = 0;
+                    ProgressBarValue = 0;
+                    ShowProgressBar = false;
+                });
+        }
+
+        private void SendData()
+        {
+            //TODO add connectionEvent ?
+            //=> phone send json, then update phone json with destinationFolder json
+            //if phone json == null then send everything in dest folder
+            //=> send updated json with only newly added files (check if already present in phone json)
+        }
+        
+        #endregion //Private methods
+
+        #region Async methods
 
         private async void BackupFiles()
         {
@@ -906,132 +1035,6 @@ namespace TheVault.ViewModels
             Application.Current.MainWindow?.Close();
         }
         
-        private void GetMediaSize(List<FolderObject> mapping, bool onClosing = false)
-        {
-            foreach (var folder in mapping)
-            {
-                foreach (var file in folder.files)
-                {
-                    var fullPathToFile = $"{BasePath}{folder.fullPath}\\{file.originName}";
-                    try
-                    {
-                        using (Stream stream = File.OpenRead(fullPathToFile))
-                        {
-                            using (var srcImg = Image.FromStream(stream, false, false))
-                            {
-                                file.width = srcImg.Width.ToString();
-                                file.height = srcImg.Height.ToString();
-                            }
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        var inputFile = new MediaFile { Filename = fullPathToFile };
-                        using (var engine = new Engine()) { engine.GetMetadata(inputFile); }
-
-                        if (inputFile.Metadata?.VideoData == null) continue;
-                        var size = inputFile.Metadata.VideoData.FrameSize.Split('x');
-                        file.width = size.First();
-                        file.height = size.Last();
-                    }
-
-                    ProgressBarValue++;
-                }
-            }
-
-            GenerateJson(mapping, onClosing);
-        }
-
-        private void GenerateJson(List<FolderObject> mapping, bool onClosing = false)
-        {
-            var json = JsonConvert.SerializeObject(mapping, Formatting.Indented);
-            var path = onClosing ? VaultPath : DestinationPath;
-            var jsonFile = $"{path}\\{EncryptionUtil.Encipher("mapping.json", 10)}";
-            File.WriteAllText(jsonFile, json);
-
-            var bytes = Encoding.UTF8.GetBytes(File.ReadAllText(jsonFile));
-            var resultEncrypt = EncryptionUtil.EncryptBytes(bytes, PassValue, SaltValue);
-            File.WriteAllBytes(jsonFile, resultEncrypt);
-            ProgressBarValue++;
-            
-            if (onClosing)
-                File.Delete($"{VaultPath}\\mapping.json");
-        }
-
-        private void StartServer()
-        {
-            //TODO change color of button too ?
-            if (SocketListener == null)
-            {
-                ServerText = "KILL SERVER";
-                ProgressBarMax = 0;
-                ProgressBarValue = 0;
-                SocketListener = new AsynchronousSocketListener 
-                    {SocketCallback = new RelayCommand(true, ServerCallback)};
-                ServerInstance = new Thread(SocketListener.StartListening);
-                ServerInstance.Start();
-            }
-            else
-            {
-                ServerText = "START SERVER";
-                SocketListener.IsStopped = true;
-                ServerInstance.Interrupt();
-                if (!ServerInstance.Join(2000))
-                    ServerInstance.Abort();
-
-                ServerInstance = null;
-                SocketListener = null;
-                Task.Delay(2500).ContinueWith(_ =>
-                {
-                    ServerMessage = "";
-                    ProgressBarMax = 0;
-                    ProgressBarValue = 0;
-                    ShowProgressBar = false;
-                });
-            }
-        }
-
-        private void ServerCallback(object info)
-        {
-            switch (info)
-            {
-                case string message:
-                    ServerMessage = message;
-                    break;
-                case long value:
-                    ProgressBarMax = Convert.ToInt32(value);
-                    ShowProgressBar = true;
-                    break;
-                case int value:
-                    ProgressBarValue = value;
-                    break;
-                case byte[] jsonBytes:
-                    DecryptDownloadedJson(jsonBytes);
-                    break;
-            }
-            
-            if (ServerMessage.Contains("Socket transfer is done"))
-                Task.Delay(2500).ContinueWith(_ =>
-                {
-                    ServerMessage = "";
-                    ProgressBarMax = 0;
-                    ProgressBarValue = 0;
-                    ShowProgressBar = false;
-                });
-        }
-
-        private void SendData()
-        {
-            //TODO add connectionEvent ?
-            //=> phone send json, then update phone json with destinationFolder json
-            //if phone json == null then send everything in dest folder
-            //=> send updated json with only newly added files (check if already present in phone json)
-        }
-        
-        #endregion //Private methods
-
-        #region Async methods
-
         private async void EncryptSelected()
         {
             var mapping = new List<FolderObject>();
@@ -1087,13 +1090,55 @@ namespace TheVault.ViewModels
         {
             await Task.Run(() =>
             {
-                var originDir = new DirectoryInfo(OriginPath);
+                var destDir = new DirectoryInfo(DestinationPath);
                 var mFile = EncryptionUtil.DecryptBytes(jsonBytes, PassValue, SaltValue);
-                File.WriteAllBytes($"{originDir.FullName}\\downloadedMapping.json", mFile);
-                DownloadedMapping = JsonConvert.DeserializeObject<List<FolderObject>>(
-                    File.ReadAllText($"{originDir.FullName}\\downloadedMapping.json"));
+                File.WriteAllBytes($"{destDir.FullName}\\mobileMapping.json", mFile);
+                DownloadedMapping = JsonConvert.DeserializeObject<List<FolderObject>>(File.ReadAllText($"{destDir.FullName}\\mobileMapping.json"));
+            }).ContinueWith(t =>
+            {
+                var destDir = new DirectoryInfo(DestinationPath);
+                if (!destDir.EnumerateFiles().Any() || destDir.EnumerateFiles().All(f => f.Name == "mobileMapping.json")) 
+                    return;
+                
+                EditJson();
             });
-            //TODO update json with content from dest folder ?
+        }
+        
+        private async void EditJson()
+        {
+            var json = new DirectoryInfo(DestinationPath).EnumerateFiles().FirstOrDefault(f => EncryptionUtil.Decipher(f.Name, 10) == "mapping.json");
+            if (json != null)
+            {
+                await Task.Run(() =>
+                {
+                    var mBytes = File.ReadAllBytes($"{json.FullName}");
+                    var mFile = EncryptionUtil.DecryptBytes(mBytes, PassValue, SaltValue);
+                    File.WriteAllBytes($"{DestinationPath}\\mapping.json", mFile);
+                    File.Delete(json.FullName);
+
+                    var mapping = JsonConvert.DeserializeObject<List<FolderObject>>(File.ReadAllText($"{DestinationPath}\\mapping.json"));
+                    var tmpFolder = mapping.FirstOrDefault(f => f.name == "Origin");
+                    var mappingEntry = tmpFolder?.files.FirstOrDefault(f => f.originName == "mapping.json");
+                    if (mappingEntry != null)
+                        tmpFolder.files.Remove(mappingEntry);
+                    
+                    foreach (var folder in DownloadedMapping)
+                        foreach (var lFolder in mapping)
+                            if (folder.Equals(lFolder) && folder.files.Count < lFolder.files.Count)
+                                foreach (var lFile in lFolder.files)
+                                    if (folder.files.FirstOrDefault(f => f.Equals(lFile)) == null) //New file
+                                        folder.files.Add(lFile);
+                    
+                    var diffFolders = DownloadedMapping.Except(mapping).ToList();
+                    if (diffFolders.Any()) //New folders
+                        foreach (var folder in diffFolders)
+                            DownloadedMapping.Add(folder);
+                }).ContinueWith(t =>
+                {
+                    File.Delete($"{DestinationPath}\\mobileMapping.json");
+                    GenerateJson(DownloadedMapping, false);
+                });
+            }
         }
         
         #endregion //Async methods
