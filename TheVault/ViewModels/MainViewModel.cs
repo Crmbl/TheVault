@@ -819,7 +819,6 @@ namespace TheVault.ViewModels
 
         private void StartServer()
         {
-            //TODO change color of button too ?
             if (SocketListener == null)
             {
                 ServerText = "KILL SERVER";
@@ -881,7 +880,7 @@ namespace TheVault.ViewModels
 
         private void SendData()
         {
-            //TODO add connectionEvent ?
+            //TODO ?
             //=> phone send json, then update phone json with destinationFolder json
             //if phone json == null then send everything in dest folder
             //=> send updated json with only newly added files (check if already present in phone json)

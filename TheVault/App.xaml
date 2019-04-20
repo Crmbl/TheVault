@@ -85,15 +85,21 @@
             <Setter Property="Height" Value="46"/>
         </Style>
 
-        <Style x:Key="ServerButton" TargetType="Button"
+        <Style x:Key="KillServer" TargetType="Button"
                BasedOn="{StaticResource MaterialDesignRaisedButton}">
-            <Setter Property="Background" Value="#e056fd" />
-            <Setter Property="BorderBrush" Value="#e056fd" />
+            <Setter Property="Background" Value="#ff6b6b" />
+            <Setter Property="BorderBrush" Value="#ff6b6b" />
             <Setter Property="Foreground" Value="#ffffff" />
             <Setter Property="Padding" Value="8,2"/>
             <Setter Property="TextBlock.FontSize" Value="12"/>
             <Setter Property="Height" Value="20"/>
             <Setter Property="materialDesign:ShadowAssist.ShadowDepth" Value="Depth2" />
+        </Style>
+        
+        <Style x:Key="StartServer" TargetType="Button"
+               BasedOn="{StaticResource KillServer}">
+            <Setter Property="Background" Value="#e056fd" />
+            <Setter Property="BorderBrush" Value="#e056fd" />
         </Style>
         
         <Style x:Key="SendButton" TargetType="Button"

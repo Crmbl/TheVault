@@ -274,9 +274,10 @@
                 <Rectangle Grid.Column="1" Margin="4" Style="{StaticResource Separator}" />
 
                 <Button Grid.Column="2"
+                        Click="StartServer_OnClick"
                         x:Name="StartServer"
                         Command="{Binding StartServerCmd}"
-                        Style="{StaticResource ServerButton}"
+                        Style="{StaticResource StartServer}"
                         Width="100"
                         Margin="5,5,5,5"
                         Content="{Binding ServerText}"/>
