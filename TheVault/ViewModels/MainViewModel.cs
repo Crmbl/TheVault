@@ -485,7 +485,7 @@ namespace TheVault.ViewModels
             
             OpenOriginFolderCmd = new RelayCommand(true, _ => OpenOriginFolder());
             OpenDestinationFolderCmd = new RelayCommand(true, _ => OpenDestinationFolder());
-            ClearDestCmd = new RelayCommand(true, _ => ClearDestinationFolder());
+            ClearDestCmd = new RelayCommand(true, _ => ClearDestinationFolder(false));
             StartServerCmd = new RelayCommand(true, _ => StartServer());
             SendDataCommand = new RelayCommand(true, _ => SendData());
             RefreshOriginFolderCmd = new RelayCommand(true, _ =>
@@ -496,7 +496,7 @@ namespace TheVault.ViewModels
             });
             EncryptCmd = new RelayCommand(true, _ =>
             {
-                ClearDestinationFolder();
+                ClearDestinationFolder(true);
                 EncryptSelected();
             });
 
@@ -749,14 +749,16 @@ namespace TheVault.ViewModels
             var vaultFolder = new DirectoryInfo(VaultPath);
             var decipheredNames = vaultFolder.EnumerateFiles().Select(x => EncryptionUtil.Decipher(x.Name, 10)).ToList();
             var originFolder = new DirectoryInfo(OriginPath);
-            
+         
+            //TODO not working, since files may have same name on diff folder level...
             return originFolder.EnumerateFiles("*", SearchOption.AllDirectories).Select(x => x.Name).Except(decipheredNames).ToList();
         }
 
-        private void ClearDestinationFolder()
+        private void ClearDestinationFolder(bool isEncrypt)
         {
             var destinationFolder = new DirectoryInfo(DestinationPath);
-            foreach (var file in destinationFolder.EnumerateFiles())
+            var list = isEncrypt ? destinationFolder.EnumerateFiles().Where(f => f.Name != "mobileMapping.json") : destinationFolder.EnumerateFiles();
+            foreach (var file in list)
                 file.Delete();
             foreach (var folder in destinationFolder.EnumerateDirectories())
                 folder.Delete(true);
@@ -810,11 +812,11 @@ namespace TheVault.ViewModels
             File.WriteAllBytes(jsonFile, resultEncrypt);
             ProgressBarValue++;
             
+            File.Delete($"{path}\\mapping.json");
             var destDir = new DirectoryInfo(DestinationPath);
-            if (destDir.EnumerateFiles().Any(f => EncryptionUtil.Decipher(f.Name, 10) == "mobileMapping.json"))
+            
+            if (destDir.EnumerateFiles().Any(f => f.Name == "mobileMapping.json"))
                 EditJson();
-            if (onClosing)
-                File.Delete($"{VaultPath}\\mapping.json");
         }
 
         private void StartServer()
@@ -890,6 +892,8 @@ namespace TheVault.ViewModels
 
         #region Async methods
 
+        //TODO won't work if multiple files have same names
+        //TODO won't work if mobileJson is there
         private async void BackupFiles()
         {
             BackingUpFiles = true;
@@ -1020,7 +1024,8 @@ namespace TheVault.ViewModels
                 }
             }
             
-            //Purge of Destination and Origin folders
+            #region Purge of Destination and Origin folders
+            
             foreach (var file in destinationFolder.EnumerateFiles())
                 file.Delete();
             foreach (var folder in destinationFolder.EnumerateDirectories())
@@ -1031,6 +1036,8 @@ namespace TheVault.ViewModels
             foreach (var folder in originFolder.EnumerateDirectories("*", SearchOption.AllDirectories))
                 folder.Delete(true);
 
+            #endregion //Purge of Destination and Origin folders
+            
             Application.Current.MainWindow?.Close();
         }
         
@@ -1085,7 +1092,7 @@ namespace TheVault.ViewModels
             });
         }
 
-        public async void DecryptDownloadedJson(byte[] jsonBytes)
+        private async void DecryptDownloadedJson(byte[] jsonBytes)
         {
             await Task.Run(() =>
             {
@@ -1123,15 +1130,17 @@ namespace TheVault.ViewModels
                     
                     foreach (var folder in DownloadedMapping)
                         foreach (var lFolder in mapping)
-                            if (folder.Equals(lFolder) && folder.files.Count < lFolder.files.Count)
+                            if (folder.Equals(lFolder) && folder.files.Count != lFolder.files.Count)
                                 foreach (var lFile in lFolder.files)
                                     if (folder.files.FirstOrDefault(f => f.Equals(lFile)) == null) //New file
                                         folder.files.Add(lFile);
-                    
-                    var diffFolders = DownloadedMapping.Except(mapping).ToList();
-                    if (diffFolders.Any()) //New folders
-                        foreach (var folder in diffFolders)
+
+                    foreach (var folder in mapping)
+                    {
+                        var dFolder = DownloadedMapping.FirstOrDefault(fo => fo.Equals(folder));
+                        if (dFolder == null) //New folder
                             DownloadedMapping.Add(folder);
+                    }
                 }).ContinueWith(t =>
                 {
                     File.Delete($"{DestinationPath}\\mobileMapping.json");

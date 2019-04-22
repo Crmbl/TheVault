@@ -87,8 +87,8 @@
 
         <Style x:Key="KillServer" TargetType="Button"
                BasedOn="{StaticResource MaterialDesignRaisedButton}">
-            <Setter Property="Background" Value="#ff6b6b" />
-            <Setter Property="BorderBrush" Value="#ff6b6b" />
+            <Setter Property="Background" Value="#EA2027" />
+            <Setter Property="BorderBrush" Value="#EA2027" />
             <Setter Property="Foreground" Value="#ffffff" />
             <Setter Property="Padding" Value="8,2"/>
             <Setter Property="TextBlock.FontSize" Value="12"/>

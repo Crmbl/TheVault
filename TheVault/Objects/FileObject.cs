@@ -1,7 +1,10 @@
 ﻿// ReSharper disable InconsistentNaming
+
+using System;
+
 namespace TheVault.Objects
 {
-    public class FileObject
+    public class FileObject : IEquatable<FileObject>
     {
         public string originName { get; set; }
         public string updatedName { get; set; }
@@ -12,15 +15,12 @@ namespace TheVault.Objects
         {
         }
 
-        public override bool Equals(object obj)
+        public bool Equals(FileObject other)
         {
-            if (!(obj is FileObject file)) 
-                return base.Equals(obj);
-
-            return file.width == this.width
-                   && file.height == this.height
-                   && file.originName == this.originName
-                   && file.updatedName == this.updatedName;
+            return string.Equals(originName, other.originName) 
+                   && string.Equals(updatedName, other.updatedName)
+                   && string.Equals(width, other.width) 
+                   && string.Equals(height, other.height);
         }
     }
 }

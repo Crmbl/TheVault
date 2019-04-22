@@ -26,13 +26,13 @@ namespace TheVault.Utils
 
     public class AsynchronousSocketListener
     {
-        public ManualResetEvent AllDone { get; set; }
+        private ManualResetEvent AllDone { get; set; }
 
         public bool IsStopped { private get; set; }
         
         public ICommand SocketCallback { get; set; }
         
-        public bool IsConnected { get; set; }
+        private bool IsConnected { get; set; }
         
         public AsynchronousSocketListener()
         {
@@ -99,7 +99,7 @@ namespace TheVault.Utils
             }
         }
 
-        public void ReadCallback(IAsyncResult ar)
+        private void ReadCallback(IAsyncResult ar)
         {
             var state = (StateObject)ar.AsyncState;
             var handler = state.WorkSocket;
@@ -113,12 +113,10 @@ namespace TheVault.Utils
                 else if (state.Size == 0 && !string.IsNullOrWhiteSpace(state.StringBuilder.ToString()))
                 {
                     state.Size = BitConverter.ToInt64(state.Buffer.Take(8).Reverse().ToArray(), 0);
+                    state.FileData = state.Buffer.Skip(8).ToArray();
                     WriteLine(state.Size);
                 }
-                else if (state.FileData == null && state.Size != 0)
-                    state.FileData = new byte[0];
-
-                if (state.FileData != null)
+                else if (state.FileData != null)
                 {
                     state.FileData = state.FileData.Concat(state.Buffer.Take(bytesRead)).ToArray();
                     WriteLine(state.FileData.Length);
@@ -156,7 +154,7 @@ namespace TheVault.Utils
             }
         }
 
-        public void WriteLine(object info)
+        private void WriteLine(object info)
         {
             if (info is string message)
                 ConsoleManager.WriteLine(message);
@@ -164,6 +162,7 @@ namespace TheVault.Utils
             SocketCallback?.Execute(info);
         }
 
+        //TODO implement sending files
         /* //Send(handler, content);
         
         public static void Send(Socket handler, String data)

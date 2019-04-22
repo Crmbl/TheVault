@@ -23,7 +23,7 @@ namespace TheVault.Views
             var viewModel = new MainViewModel(mapping);
             DataContext = viewModel;
             
-            StartServer.Style = Resources["StartServer"] as Style;
+            StartServer.Style = FindResource("StartServer") as Style;
             viewModel.OnEncryptFinished = new RelayCommand(true, OnEncryptFinished);
             viewModel.OnEncryptListChanged = new RelayCommand(true, _ => OnEncryptListChanged());
             viewModel.OnDecryptListChanged = new RelayCommand(true, _ => OnDecryptListChanged());
@@ -115,9 +115,9 @@ namespace TheVault.Views
         private void StartServer_OnClick(object sender, RoutedEventArgs e)
         {
             if ((StartServer.Content as string) == "KILL SERVER")
-                StartServer.Style = Resources["KillServer"] as Style;
+                StartServer.Style = FindResource("StartServer") as Style;
             else
-                StartServer.Style = Resources["StartServer"] as Style;
+                StartServer.Style = FindResource("KillServer") as Style;
         }
     }
 }

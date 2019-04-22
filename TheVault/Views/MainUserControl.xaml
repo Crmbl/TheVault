@@ -277,7 +277,6 @@
                         Click="StartServer_OnClick"
                         x:Name="StartServer"
                         Command="{Binding StartServerCmd}"
-                        Style="{StaticResource StartServer}"
                         Width="100"
                         Margin="5,5,5,5"
                         Content="{Binding ServerText}"/>
