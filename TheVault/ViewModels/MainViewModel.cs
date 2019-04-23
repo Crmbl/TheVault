@@ -18,6 +18,7 @@ using Image = System.Drawing.Image;
 
 namespace TheVault.ViewModels
 {
+    //TODO if file has same name as another, the small + won't show in DecryptedList
     public class MainViewModel : BaseViewModel
     {        
         #region Instance variables
@@ -960,8 +961,10 @@ namespace TheVault.ViewModels
                 });
             }
             else
-            { //TODO NOT WORKING IF FILES IN DESTFOLDER // NOT TRIED WITH MOBILEJSON !!
-                //TODO also if file has same name as another, the small + won't show in DecryptedList
+            // vaultFolder files and destFolder no files     <= working
+            // vaultFolder no file and destFolder files      <= TODO ? may already be working
+            // vaultFolder files and destFolder files        <= TODO not working be careful with mobileMapping must remove first and after?
+            {
                 var mapping = new List<FolderObject>();
                 await Task.Run(() =>
                 {
