@@ -473,10 +473,8 @@ namespace TheVault.ViewModels
             PassValue = lines[4];
             SaltValue = lines[5];
             
-            OriginFileNames = new DirectoryInfo(OriginPath).EnumerateFiles("*", 
-                        SearchOption.AllDirectories).Select(f => f.Name).ToList();
-            DestinationFileNames = new DirectoryInfo(DestinationPath).EnumerateFiles("*", 
-                SearchOption.AllDirectories).Select(f => f.Name).ToList();
+            OriginFileNames = new DirectoryInfo(OriginPath).EnumerateFiles("*", SearchOption.AllDirectories).Select(f => f.FullName).ToList();
+            DestinationFileNames = new DirectoryInfo(DestinationPath).EnumerateFiles("*", SearchOption.AllDirectories).Select(f => f.FullName).ToList();
             
             ServerText = "START SERVER";
             BackingUpFiles = false;
@@ -504,6 +502,7 @@ namespace TheVault.ViewModels
             {
                 Path = OriginPath,
                 Filter = "*",
+                IncludeSubdirectories = true,
                 NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite
                             | NotifyFilters.FileName | NotifyFilters.DirectoryName
             };
@@ -517,6 +516,7 @@ namespace TheVault.ViewModels
             {
                 Path = DestinationPath,
                 Filter = "*",
+                IncludeSubdirectories = true,
                 NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite
                                | NotifyFilters.FileName | NotifyFilters.DirectoryName
             };
@@ -637,7 +637,7 @@ namespace TheVault.ViewModels
             switch (name)
             {
                 case "SortAlphaOne":
-                    DecryptedFiles = DecryptedFiles.OrderByDescending(f => f.FileName).ToList();
+                    DecryptedFiles = DecryptedFiles.OrderBy(f => f.FileName).ToList();
                     break;
                 
                 case "SortSelected":
@@ -676,10 +676,10 @@ namespace TheVault.ViewModels
 
         private void GetOriginFolder()
         {
-            var files = new DirectoryInfo(OriginPath).EnumerateFiles("*", SearchOption.AllDirectories);
-            var fileNames = files.Select(f => f.Name).ToList();
+            var files = new DirectoryInfo(OriginPath).EnumerateFiles("*", SearchOption.AllDirectories).ToList();
+            var fileNames = files.Select(f => f.FullName).ToList();
 
-            if (files.Count() == OriginFileNames.Count && DecryptedFiles.Count == OriginFileNames.Count)
+            if (files.Count == OriginFileNames.Count && DecryptedFiles.Count == OriginFileNames.Count)
             {
                 var diff = fileNames.Except(OriginFileNames).ToList();
                 if (diff.Count == 0) return;
@@ -687,7 +687,6 @@ namespace TheVault.ViewModels
             
             OriginFileNames = fileNames;
             DecryptedFiles = new List<FileViewModel>();
-
             if (Mapping != null)
             {
                 var mappingFiles = new List<FileObject>();
@@ -710,8 +709,10 @@ namespace TheVault.ViewModels
                 foreach (var file in files)
                 {
                     var isEnabled = FileUtil.FileExtensions.Contains(file.Extension);
-                    var fileViewModel = new FileViewModel(isEnabled, file.Name, file.DirectoryName?.Remove(0, BasePath.Length), isEnabled);
-                    fileViewModel.SelectionChanged = new RelayCommand(true, _ => ItemSelectionChanged());
+                    var fileViewModel = new FileViewModel(isEnabled, file.Name, file.DirectoryName?.Remove(0, BasePath.Length), isEnabled)
+                    {
+                        SelectionChanged = new RelayCommand(true, _ => ItemSelectionChanged())
+                    };
                     DecryptedFiles.Add(fileViewModel);
                 }
             }
@@ -723,10 +724,10 @@ namespace TheVault.ViewModels
 
         private void GetDestinationFolder()
         {
-            var files = new DirectoryInfo(DestinationPath).EnumerateFiles("*", SearchOption.AllDirectories);
-            var fileNames = files.Select(f => f.Name).ToList();
+            var files = new DirectoryInfo(DestinationPath).EnumerateFiles("*", SearchOption.AllDirectories).ToList();
+            var fileNames = files.Select(f => f.FullName).ToList();
             
-            if (files.Count() == DestinationFileNames.Count && EncryptedFiles.Count == DestinationFileNames.Count)
+            if (files.Count == DestinationFileNames.Count && EncryptedFiles.Count == DestinationFileNames.Count)
             {
                 var diff = fileNames.Except(DestinationFileNames).ToList();
                 if (diff.Count == 0) return;
@@ -736,12 +737,12 @@ namespace TheVault.ViewModels
             EncryptedFiles = new List<FileViewModel>();
             foreach (var file in files)
             {
-                var fileSize = file.Length / 1024 > 1024 ? $"{file.Length / 1024 / 1024} Mo" : file.Length / 1024 == 0 ? $"1 Ko" : $"{file.Length / 1024} Ko";
+                var fileSize = file.Length / 1024 > 1024 ? $"{file.Length / 1024 / 1024} Mo" : file.Length / 1024 == 0 ? "1 Ko" : $"{file.Length / 1024} Ko";
                 var fileViewModel = new FileViewModel(file.Name, fileSize);
                 EncryptedFiles.Add(fileViewModel);
             }
 
-            EncryptedFilesToolBar = EncryptedFiles.Count().ToString();
+            EncryptedFilesToolBar = EncryptedFiles.Count.ToString();
             NotifyPropertyChanged("DestinationFolderEmpty");
         }
 
@@ -758,8 +759,8 @@ namespace TheVault.ViewModels
         private List<FolderObject> RemoveMissingFiles(List<FolderObject> mapping)
         {
             var tmpMapping = new List<FolderObject>();
-            tmpMapping.AddRange(mapping.Select(fo => 
-                new FolderObject(fo.name, fo.fullPath, fo.files.Select(fi => new FileObject(fi.originName, fi.updatedName, fi.width, fi.height)).ToList())));
+            tmpMapping.AddRange(mapping.Select(fo => new FolderObject(fo.name, fo.fullPath, 
+                fo.files.Select(fi => new FileObject(fi.originName, fi.updatedName, fi.width, fi.height)).ToList())));
             foreach (var folder in tmpMapping)
             {
                 if (!Directory.Exists($"{BasePath}{folder.fullPath}"))
@@ -926,7 +927,7 @@ namespace TheVault.ViewModels
                 var mapping = new List<FolderObject>();
                 await Task.Run(() =>
                 {
-                    ProgressBarMax = DecryptedFiles.Count();
+                    ProgressBarMax = DecryptedFiles.Count;
                     foreach (var file in DecryptedFiles)
                     {
                         var filePath = $"{file.Path.Remove(0, OriginPath.Length - BasePath.Length)}";
@@ -943,7 +944,7 @@ namespace TheVault.ViewModels
                         File.WriteAllBytes($"{VaultPath}\\{cipheredName}", encryptedFile);
 
                         var fName = file.Path.Contains("\\") ? file.Path.Split('\\').Last() : file.Path;
-                        var folderObject = mapping.FirstOrDefault(f => f.name == fName);
+                        var folderObject = mapping.FirstOrDefault(f => f.name == fName && f.fullPath == file.Path);
                         if (folderObject == null)
                         {
                             folderObject = new FolderObject(fName, file.Path);
@@ -979,8 +980,8 @@ namespace TheVault.ViewModels
                             File.Delete($"{DestinationPath}\\{file.Name}");
                     }
                     
-                    var json = new DirectoryInfo(VaultPath).EnumerateFiles().FirstOrDefault(f => EncryptionUtil.Decipher(f.Name, 10) == "mapping.json");
-                    var mBytes = File.ReadAllBytes($"{json?.FullName}");
+                    var json = new DirectoryInfo(VaultPath).EnumerateFiles().First(f => EncryptionUtil.Decipher(f.Name, 10) == "mapping.json");
+                    var mBytes = File.ReadAllBytes($"{json.FullName}");
                     var mFile = EncryptionUtil.DecryptBytes(mBytes, PassValue, SaltValue);
                     File.WriteAllBytes($"{VaultPath}\\mapping.json", mFile);
                     File.Delete(json.FullName);
@@ -988,16 +989,17 @@ namespace TheVault.ViewModels
                     mapping = JsonConvert.DeserializeObject<List<FolderObject>>(File.ReadAllText($"{VaultPath}\\mapping.json"));
                     mapping = RemoveMissingFiles(mapping);
 
-                    ProgressBarMax = DecryptedFiles.Count();
+                    ProgressBarMax = DecryptedFiles.Count;
                     foreach (var file in DecryptedFiles)
                     {
                         ProgressBarValue++;
                         if (file.FileName == "mapping.json") continue;
 
-                        var tmpFolder = mapping.FirstOrDefault(fo => fo.fullPath == file.Path);
+                        var fName = file.Path.Contains("\\") ? file.Path.Split('\\').Last() : file.Path;
+                        var tmpFolder = mapping.FirstOrDefault(fo => fo.name == fName && fo.fullPath == file.Path);
                         if (tmpFolder == null)
                         {
-                            tmpFolder = new FolderObject(file.Path.Contains("\\") ? file.Path.Split('\\').Last() : file.Path, file.Path);
+                            tmpFolder = new FolderObject(fName, file.Path);
                             mapping.Add(tmpFolder);
                         }
                         
@@ -1006,13 +1008,11 @@ namespace TheVault.ViewModels
 
                         var ext = file.FileName.Split('.').Last().Insert(0, ".");
                         var fileName = file.FileName;
-                                
-                        var i = 0;
-                        while (File.Exists($"{VaultPath}\\{EncryptionUtil.Encipher(fileName, 10)}"))
-                        {
-                            //TODO here must check if this is legit a new file, or just duplicated entry...
-                            fileName = fileName.Replace($"{(i == 0 ? string.Empty : i.ToString())}{ext}", $"{++i}{ext}");
-                        }
+
+                        var fileSameNameCount = DecryptedFiles.Count(fi => fi.FileName == file.FileName);
+                        var mappingSameNameCount = mapping.SelectMany(fo => fo.files.Where(fi => fi.originName == file.FileName)).Count();
+                        if (fileSameNameCount > 1 && mappingSameNameCount > 0)
+                            fileName = fileName.Replace($"{ext}", $"{mappingSameNameCount}{ext}");
                         
                         var cipheredName = EncryptionUtil.Encipher(fileName, 10);
                         if (!File.Exists($"{VaultPath}\\{cipheredName}"))
@@ -1034,127 +1034,6 @@ namespace TheVault.ViewModels
                     GetMediaSize(mapping, true);
                 });
             }
-            
-            /* OLF STUFF
-            //Check if vault folder has less files than origin folder
-            if (vaultCount < originCount)
-            {
-                //Check if VaultFolder has any files, else we copy DestFolder in it
-                if (!vaultFolder.EnumerateFiles().Any())
-                {
-                    foreach (var file in destinationFolder.EnumerateFiles())
-                        file.MoveTo($"{VaultPath}\\{file.Name}");
-                }
-                
-                //Check if Vault misses some files from Origin
-                var result = GetMissingFileNames();
-                ProgressBarValue = 0;
-                ProgressBarMax = result.Count() *2;
-                if (result.Count() != 0)
-                {
-                    //We get the json and try to edit it
-                    var json = new DirectoryInfo(VaultPath).EnumerateFiles().FirstOrDefault(f => EncryptionUtil.Decipher(f.Name, 10) == "mapping.json");
-                    var mapping = new List<FolderObject>();
-                    if (json != null)
-                    {
-                        await Task.Run(() =>
-                        {
-                            var mBytes = File.ReadAllBytes($"{json.FullName}");
-                            var mFile = EncryptionUtil.DecryptBytes(mBytes, PassValue, SaltValue);
-                            File.WriteAllBytes($"{VaultPath}\\mapping.json", mFile);
-                            File.Delete(json.FullName);
-
-                            mapping = JsonConvert.DeserializeObject<List<FolderObject>>(
-                                File.ReadAllText($"{VaultPath}\\mapping.json"));
-                            var tmpFolder = mapping.FirstOrDefault(f => f.name == "Origin");
-                            //Remove the mapping entry from itself!
-                            tmpFolder?.files.RemoveAll(f => f.originName == "mapping.json");
-
-                            //Add the new entries in the Json file and encrypt missing files
-                            foreach (var fileName in result)
-                            {
-                                var file = new DirectoryInfo(OriginPath)
-                                    .EnumerateFiles("*", SearchOption.AllDirectories)
-                                    .FirstOrDefault(f => f.Name == fileName);
-                                if (file == null) throw new Exception($"File not found : {fileName}");
-                                
-                                var fBytes = File.ReadAllBytes(file.FullName);
-                                var encryptedFile = EncryptionUtil.EncryptBytes(fBytes, PassValue, SaltValue);
-                                var ext = file.Extension;
-                                var tmpName = file.Name;
-
-                                var i = 0;
-                                while (File.Exists($"{VaultPath}\\{EncryptionUtil.Encipher(tmpName, 10)}"))
-                                    tmpName = tmpName.Replace($"{(i == 0 ? string.Empty : i.ToString())}{ext}", $"{++i}{ext}");
-
-                                var cipheredName = EncryptionUtil.Encipher(tmpName, 10);
-                                File.WriteAllBytes($"{VaultPath}\\{cipheredName}", encryptedFile);
-
-                                var folderObject = mapping.FirstOrDefault(f => f.name == file.Directory?.Name);
-                                if (folderObject == null)
-                                {
-                                    folderObject = new FolderObject(file.Directory?.Name, "");
-                                    mapping.Add(folderObject);
-                                }
-
-                                folderObject.files.Add(new FileObject
-                                {
-                                    originName = file.Name,
-                                    updatedName = fileName
-                                });
-
-                                ProgressBarValue++;
-                            }
-                        }).ContinueWith(_ =>
-                        {
-                            GetMediaSize(RemoveMissingFiles(mapping), true);
-                        });
-                    }
-                    #region FROM SCRATCH
-                    else
-                    {
-                        //There is no JsonFile, so we create it from scratch
-                        await Task.Run(() =>
-                        {
-                            foreach (var file in DecryptedFiles)
-                            {
-                                var filePath = $"{file.Path.Remove(0, OriginPath.Length - BasePath.Length)}";
-                                var fBytes = File.ReadAllBytes($"{OriginPath}{filePath}\\{file.FileName}");
-                                var encryptedFile = EncryptionUtil.EncryptBytes(fBytes, PassValue, SaltValue);
-                                var ext = file.FileName.Split('.').Last().Insert(0, ".");
-                                var fileName = file.FileName;
-
-                                var i = 0;
-                                while (File.Exists($"{VaultPath}\\{EncryptionUtil.Encipher(fileName, 10)}"))
-                                    fileName = fileName.Replace($"{(i == 0 ? string.Empty : i.ToString())}{ext}", $"{++i}{ext}");
-
-                                var cipheredName = EncryptionUtil.Encipher(fileName, 10);
-                                File.WriteAllBytes($"{VaultPath}\\{cipheredName}", encryptedFile);
-
-                                var fName = file.Path.Contains("\\") ? file.Path.Split('\\').Last() : file.Path;
-                                var folderObject = mapping.FirstOrDefault(f => f.name == fName);
-                                if (folderObject == null)
-                                {
-                                    folderObject = new FolderObject(fName, file.Path);
-                                    mapping.Add(folderObject);
-                                }
-
-                                folderObject.files.Add(new FileObject
-                                {
-                                    originName = file.FileName,
-                                    updatedName = fileName
-                                });
-
-                                ProgressBarValue++;
-                            }
-                        }).ContinueWith(_ =>
-                        {
-                            GetMediaSize(mapping, true);
-                        });
-                    }
-                    #endregion //FROM SCRATCH
-                }
-            }*/
             
             #region Purge of Destination and Origin folders
             
@@ -1198,7 +1077,7 @@ namespace TheVault.ViewModels
                     ServerMessage = file.FileName;
 
                     var fName = file.Path.Contains("\\") ? file.Path.Split('\\').Last() : file.Path;
-                    var folderObject = mapping.FirstOrDefault(f => f.name == fName);
+                    var folderObject = mapping.FirstOrDefault(f => f.name == fName && f.fullPath == file.Path);
                     if (folderObject == null)
                     {
                         folderObject = new FolderObject(fName, file.Path);
@@ -1258,10 +1137,7 @@ namespace TheVault.ViewModels
                     File.Delete(json.FullName);
 
                     var mapping = JsonConvert.DeserializeObject<List<FolderObject>>(File.ReadAllText($"{DestinationPath}\\mapping.json"));
-                    var tmpFolder = mapping.FirstOrDefault(f => f.name == "Origin");
-                    var mappingEntry = tmpFolder?.files.FirstOrDefault(f => f.originName == "mapping.json");
-                    if (mappingEntry != null)
-                        tmpFolder.files.Remove(mappingEntry);
+                    mapping.FirstOrDefault(f => f.name == "Origin")?.files.RemoveAll(f => f.originName == "mapping.json");
                     
                     foreach (var folder in DownloadedMapping)
                         foreach (var lFolder in mapping)
@@ -1279,7 +1155,7 @@ namespace TheVault.ViewModels
                 }).ContinueWith(t =>
                 {
                     File.Delete($"{DestinationPath}\\mobileMapping.json");
-                    GenerateJson(DownloadedMapping, false);
+                    GenerateJson(DownloadedMapping);
                 });
             }
         }
