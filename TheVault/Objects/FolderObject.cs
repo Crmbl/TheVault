@@ -22,6 +22,13 @@ namespace TheVault.Objects
             files = new List<FileObject>();
         }
 
+        public FolderObject(string name, string fullPath, List<FileObject> files)
+        {
+            this.name = name;
+            this.fullPath = fullPath;
+            this.files = files;
+        }
+        
         public bool Equals(FolderObject other)
         {
             return string.Equals(name, other.name) 
