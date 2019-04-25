@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -904,9 +905,12 @@ namespace TheVault.ViewModels
         private void SendData()
         {
             //TODO implement sending files
-            //=> phone send json, then update phone json with destinationFolder json
-            //if phone json == null then send everything in dest folder
-            //=> send updated json with only newly added files (check if already present in phone json)
+            var list = EncryptedFiles.Take(1);
+            foreach (var file in list)
+            {
+                SocketListener.Send(SocketListener.ClientSocket, 
+                    File.ReadAllBytes($"{DestinationPath}\\{file.FileName}"));
+            }
         }
         
         #endregion //Private methods

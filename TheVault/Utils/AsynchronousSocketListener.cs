@@ -10,7 +10,7 @@ namespace TheVault.Utils
 {
     public class StateObject
     {
-        // Client  socket.  
+        // Client socket.  
         public Socket WorkSocket;
         // Size of receive buffer.  
         public const int BufferSize = 1024;
@@ -40,6 +40,8 @@ namespace TheVault.Utils
             IsStopped = false;
         }
 
+        public Socket ClientSocket { get; set; }
+        
         public void StartListening()
         {
             var ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
@@ -85,6 +87,7 @@ namespace TheVault.Utils
                 IsConnected = true;
                 var listener = (Socket)ar.AsyncState;
                 var handler = listener.EndAccept(ar);
+                //ClientSocket = handler;
     
                 var state = new StateObject {WorkSocket = handler};
                 WriteLine($"-- Begin receive");
@@ -143,6 +146,7 @@ namespace TheVault.Utils
                     WriteLine($"-- Decrypted filename : {EncryptionUtil.Decipher(content, 10)}");
                     WriteLine($"-- Read {state.FileData.Length} bytes on {state.Size}");
                     WriteLine(state.FileData);
+                    ClientSocket = handler;
                 }
                 
                 WriteLine("Socket transfer is done, end communication");
@@ -163,18 +167,12 @@ namespace TheVault.Utils
         }
 
         //TODO implement sending files
-        /* //Send(handler, content);
-        
-        public static void Send(Socket handler, String data)
+        public void Send(Socket handler, byte[] data)
         {
-            // Convert the string data to byte data using ASCII encoding.  
-            var byteData = Encoding.ASCII.GetBytes(data);
-
-            // Begin sending the data to the remote device.  
-            handler.BeginSend(byteData, 0, byteData.Length, 0, SendCallback, handler);
+            handler.BeginSend(data, 0, data.Length, 0, SendCallback, handler);
         }
 
-        private static void SendCallback(IAsyncResult ar)
+        private void SendCallback(IAsyncResult ar)
         {
             try
             {
@@ -185,15 +183,13 @@ namespace TheVault.Utils
                 var bytesSent = handler.EndSend(ar);
                 WriteLine($"Sent {bytesSent} bytes to client.");
 
-                handler.Shutdown(SocketShutdown.Both);
-                handler.Close();
-
+                //handler.Shutdown(SocketShutdown.Both);
+                //handler.Close();
             }
             catch (Exception e)
             {
                 WriteLine($"{e}");
             }
         }
-        */
     }
 }
