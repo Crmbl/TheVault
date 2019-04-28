@@ -28,12 +28,18 @@ namespace TheVault.Views
             viewModel.OnEncryptListChanged = new RelayCommand(true, _ => OnEncryptListChanged());
             viewModel.OnDecryptListChanged = new RelayCommand(true, _ => OnDecryptListChanged());
             viewModel.OpenDialogCmd = new RelayCommand(true, _ => OnOpenDialog());
+            viewModel.OpenDialogDeviceCmd = new RelayCommand(true, _ => OnOpenDialogDevice());
             viewModel.DecryptListItemChangedCmd = new RelayCommand(true, viewModel.SortDecryptButtonChanged);
             viewModel.EncryptListItemChangedCmd = new RelayCommand(true, viewModel.SortEncryptButtonChanged);
             viewModel.CloseDialogCmd = new RelayCommand(true, param =>
             {
                 Dialog.IsOpen = false;
                 viewModel.OnCloseDialog(param);
+            });
+            viewModel.CloseDialogDeviceCmd = new RelayCommand(true, param =>
+            {
+                DialogDevice.IsOpen = false;
+                viewModel.OnCloseDialogDevice(param);
             });
         }
 
@@ -97,18 +103,27 @@ namespace TheVault.Views
                     Dialog.IsOpen = true;
             });
         }
+        
+        private void OnOpenDialogDevice()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (!DialogDevice.IsOpen)
+                    DialogDevice.IsOpen = true;
+            });
+        }
 
         private void OnDecryptedListSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var listBox = sender as ListBox;
-            var item = listBox?.SelectedItems.Count > 0 ? listBox?.SelectedItems[0] : null;
+            var item = listBox?.SelectedItems.Count > 0 ? listBox.SelectedItems[0] : null;
             (DataContext as MainViewModel)?.DecryptListItemChangedCmd.Execute(item);
         }
             
         private void OnEncryptedListSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var listBox = sender as ListBox;
-            var item = listBox?.SelectedItems.Count > 0 ? listBox?.SelectedItems[0] : null;
+            var item = listBox?.SelectedItems.Count > 0 ? listBox.SelectedItems[0] : null;
             (DataContext as MainViewModel)?.EncryptListItemChangedCmd.Execute(item);
         }
 

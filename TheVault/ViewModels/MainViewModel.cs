@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -13,6 +14,7 @@ using System.Windows.Controls;
 using MediaToolkit;
 using MediaToolkit.Model;
 using Newtonsoft.Json;
+using SharpAdbClient;
 using TheVault.Objects;
 using TheVault.Utils;
 using Image = System.Drawing.Image;
@@ -56,6 +58,10 @@ namespace TheVault.ViewModels
         private RelayCommand _closeDialogCmd;
 
         private RelayCommand _openDialogCmd;
+        
+        private RelayCommand _closeDialogDeviceCmd;
+
+        private RelayCommand _openDialogDeviceCmd;
 
         private RelayCommand _decryptListItemChangedCmd;
         
@@ -68,6 +74,10 @@ namespace TheVault.ViewModels
         private List<FileViewModel> _encryptedFiles;
 
         private List<FileViewModel> _decryptedFiles;
+
+        private List<DeviceData> _devices;
+        
+        private DeviceData _device;
 
         private int _progressBarValue;
 
@@ -251,6 +261,28 @@ namespace TheVault.ViewModels
                 NotifyPropertyChanged("OpenDialogCmd");
             }
         }
+        
+        public RelayCommand CloseDialogDeviceCmd
+        {
+            get => _closeDialogDeviceCmd;
+            set
+            {
+                if (_closeDialogDeviceCmd == value) return;
+                _closeDialogDeviceCmd = value;
+                NotifyPropertyChanged("CloseDialogDeviceCmd");
+            }
+        }
+        
+        public RelayCommand OpenDialogDeviceCmd
+        {
+            get => _openDialogDeviceCmd;
+            set
+            {
+                if (_openDialogDeviceCmd == value) return;
+                _openDialogDeviceCmd = value;
+                NotifyPropertyChanged("OpenDialogDeviceCmd");
+            }
+        }
 
         public RelayCommand RefreshOriginFolderCmd
         {
@@ -416,6 +448,28 @@ namespace TheVault.ViewModels
                 NotifyPropertyChanged("BackingUpFiles");
             }
         }
+        
+        public List<DeviceData> Devices
+        {
+            get => _devices;
+            set
+            {
+                if (_devices == value) return;
+                _devices = value;
+                NotifyPropertyChanged("Devices");
+            }
+        }
+        
+        public DeviceData Device
+        {
+            get => _device;
+            set
+            {
+                if (_device == value) return;
+                _device = value;
+                NotifyPropertyChanged("Device");
+            }
+        }
 
         private List<FolderObject> Mapping { get; set; }
         
@@ -437,9 +491,13 @@ namespace TheVault.ViewModels
         
         private List<string> DestinationFileNames { get; set; }
         
-        private Thread ServerInstance { get; set; }
+        private AdbServer AdbServer { get; set; }
+
+        private DeviceMonitor DeviceMonitor { get; set; }
         
-        private AsynchronousSocketListener SocketListener { get; set; }
+        //private Thread ServerInstance { get; set; }
+        
+        //private AsynchronousSocketListener SocketListener { get; set; }
         
         #endregion //Properties
 
@@ -573,6 +631,15 @@ namespace TheVault.ViewModels
             if (!result) return;
             
             BackupFiles();
+        }
+
+        public void OnCloseDialogDevice(object param)
+        {
+            //TODO MUST WORK ON THIS
+            if (Device == null)
+                Device = Devices.FirstOrDefault();
+            if (Device != null)
+                Console.WriteLine($@"Device selected : {Device.Model}");
         }
 
         private void AllSelectedChanged()
@@ -843,7 +910,42 @@ namespace TheVault.ViewModels
 
         private void StartServer()
         {
-            if (SocketListener == null)
+            //TODO MUST WORK ON THIS
+            if (AdbServer == null)
+            {
+                ServerText = "KILL SERVER";
+                ProgressBarMax = 0;
+                ProgressBarValue = 0;
+
+                const string adbPath = @"C:\Users\axels\AppData\Local\Android\Sdk\platform-tools\adb.exe";
+                if (!File.Exists(adbPath)) throw new FileNotFoundException("Error can't find adb.exe");
+                
+                AdbServer = new AdbServer();
+                AdbServer.StartServer(adbPath, false);
+                Console.WriteLine(AdbServer.GetStatus());
+                
+                DeviceMonitor = new DeviceMonitor(new AdbSocket(new IPEndPoint(IPAddress.Loopback, AdbClient.AdbServerPort)));
+                DeviceMonitor.DeviceConnected += OnDeviceConnected;
+                DeviceMonitor.DeviceDisconnected += OnDeviceDisconnected;
+                DeviceMonitor.Start();
+            }
+            else
+            {
+                ServerText = "START SERVER";
+                AdbServer = null;
+                DeviceMonitor.Dispose();
+                DeviceMonitor = null;
+                
+                Task.Delay(2500).ContinueWith(_ =>
+                {
+                    ServerMessage = "";
+                    ProgressBarMax = 0;
+                    ProgressBarValue = 0;
+                    ShowProgressBar = false;
+                });
+            }
+            
+            /*if (SocketListener == null)
             {
                 ServerText = "KILL SERVER";
                 ProgressBarMax = 0;
@@ -870,6 +972,36 @@ namespace TheVault.ViewModels
                     ProgressBarValue = 0;
                     ShowProgressBar = false;
                 });
+            }*/
+        }
+        
+        private void OnDeviceConnected(object sender, DeviceDataEventArgs e)
+        {
+            //TODO MUST WORK ON THIS
+            if (Devices != null && Devices == AdbClient.Instance.GetDevices()) return;
+            
+            Console.WriteLine($@"The device {e.Device.Serial} has connected to this PC");
+            Devices = AdbClient.Instance.GetDevices();
+            
+            Thread.Sleep(100);
+            if (Devices.Count > 1)
+                OpenDialogDeviceCmd.Execute(null);
+            else
+                Device = Devices.LastOrDefault();
+        }
+
+        private void OnDeviceDisconnected(object sender, DeviceDataEventArgs e)
+        {
+            //TODO MUST WORK ON THIS
+            Console.WriteLine($@"The device {e.Device.Serial} has disconnected from this PC");
+            Devices = AdbClient.Instance.GetDevices();
+
+            if (Devices.Count > 1)
+                OpenDialogDeviceCmd.Execute(null);
+            else
+            {
+                Device = Devices.LastOrDefault();
+                Console.WriteLine(Device == null ? $@"No device selected" : $@"Device selected : {Device.Model}");
             }
         }
 
@@ -904,13 +1036,13 @@ namespace TheVault.ViewModels
 
         private void SendData()
         {
-            //TODO implement sending files
+            /*//TODO implement sending files
             var list = EncryptedFiles.Take(1);
             foreach (var file in list)
             {
                 SocketListener.Send(SocketListener.ClientSocket, 
                     File.ReadAllBytes($"{DestinationPath}\\{file.FileName}"));
-            }
+            }*/
         }
         
         #endregion //Private methods

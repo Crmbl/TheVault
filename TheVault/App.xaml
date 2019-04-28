@@ -165,6 +165,12 @@
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="Bold" />
         </Style>
+        
+        <Style x:Key="DeviceText" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
         <!-- MainControl -->
 
         <!-- Override default GridViewColumnHeader style to align checkbox in header... -->

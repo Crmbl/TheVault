@@ -8,7 +8,7 @@ using System.Windows.Input;
 
 namespace TheVault.Utils
 {
-    public class StateObject
+    /*public class StateObject
     {
         // Client socket.  
         public Socket WorkSocket;
@@ -191,5 +191,5 @@ namespace TheVault.Utils
                 WriteLine($"{e}");
             }
         }
-    }
+    }*/
 }
