@@ -260,6 +260,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
@@ -282,6 +283,13 @@
                         Content="{Binding ServerText}"/>
 
                 <Button Grid.Column="3"
+                        x:Name="GetJson"
+                        Command="{Binding GetJsonCommand}"
+                        Style="{StaticResource JSonButton}"
+                        Margin="0,5,5,5"
+                        Content="GET JSON"/>
+                
+                <Button Grid.Column="4"
                         x:Name="SendData"
                         Command="{Binding SendDataCommand}"
                         Style="{StaticResource SendButton}"
@@ -289,7 +297,7 @@
                         Content="SEND DATA"/>
 
                 <TextBlock x:Name="ServerMessageBlock"
-                           Grid.Column="4" 
+                           Grid.Column="5" 
                            TextAlignment="Right"
                            VerticalAlignment="Center"
                            Margin="0,0,5,0"
@@ -297,7 +305,7 @@
                            Text="{Binding ServerMessage}" />
 
                 <ProgressBar x:Name="ServerProgressBar"
-                             Grid.Column="5"
+                             Grid.Column="6"
                              Height="10"
                              Width="200"
                              Foreground="#6c5ce7"
@@ -372,7 +380,8 @@
                              Width="160"
                              Height="auto"
                              HorizontalAlignment="Left"
-                             SelectedItem="{Binding Device, Mode=TwoWay}">
+                             SelectedItem="{Binding Device, Mode=TwoWay}"
+                             SelectedIndex="0">
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel Orientation="Vertical" />

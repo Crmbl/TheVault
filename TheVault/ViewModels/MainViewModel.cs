@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -70,6 +69,8 @@ namespace TheVault.ViewModels
         private RelayCommand _startServerCmd;
         
         private RelayCommand _sendDataCommand;
+        
+        private RelayCommand _getJsonCommand;
 
         private List<FileViewModel> _encryptedFiles;
 
@@ -361,6 +362,17 @@ namespace TheVault.ViewModels
             }
         }
             
+        public RelayCommand GetJsonCommand
+        {
+            get => _getJsonCommand;
+            set
+            {
+                if (_getJsonCommand == value) return;
+                _getJsonCommand = value;
+                NotifyPropertyChanged("GetJsonCommand");
+            }
+        }
+        
         public List<FileViewModel> EncryptedFiles
         {
             get => _encryptedFiles;
@@ -494,11 +506,7 @@ namespace TheVault.ViewModels
         private AdbServer AdbServer { get; set; }
 
         private DeviceMonitor DeviceMonitor { get; set; }
-        
-        //private Thread ServerInstance { get; set; }
-        
-        //private AsynchronousSocketListener SocketListener { get; set; }
-        
+
         #endregion //Properties
 
         #region Constructors
@@ -545,6 +553,7 @@ namespace TheVault.ViewModels
             ClearDestCmd = new RelayCommand(true, _ => ClearDestinationFolder(false));
             StartServerCmd = new RelayCommand(true, _ => StartServer());
             SendDataCommand = new RelayCommand(true, _ => SendData());
+            GetJsonCommand = new RelayCommand(true, _ => GetJson());
             RefreshOriginFolderCmd = new RelayCommand(true, _ =>
             {
                 GetOriginFolder();
@@ -633,13 +642,37 @@ namespace TheVault.ViewModels
             BackupFiles();
         }
 
-        public void OnCloseDialogDevice(object param)
+        public async void OnCloseDialogDevice(object param)
         {
-            //TODO MUST WORK ON THIS
             if (Device == null)
                 Device = Devices.FirstOrDefault();
-            if (Device != null)
-                Console.WriteLine($@"Device selected : {Device.Model}");
+            
+            WriteLine($@"Selected device: {Device?.Model}");
+            await Task.Delay(2000).ContinueWith(_ => { ServerMessage = ""; });
+        }
+        
+        private async void OnDeviceConnected(object sender, DeviceDataEventArgs e)
+        {
+            await Task.Delay(100);
+            Devices = AdbClient.Instance.GetDevices();
+            WriteLine($@"{Devices.FirstOrDefault(d => d.Serial == e.Device.Serial)?.Model} connected to server");
+            
+            if (Devices.Count > 1)
+                OpenDialogDeviceCmd.Execute(null);
+            else
+                Device = Devices.LastOrDefault();
+        }
+
+        private async void OnDeviceDisconnected(object sender, DeviceDataEventArgs e)
+        {
+            await Task.Delay(100);
+            WriteLine($@"{Devices.FirstOrDefault(d => d.Serial == e.Device.Serial)?.Model} disconnected from server");
+            Devices = AdbClient.Instance.GetDevices();
+            
+            if (Devices.Count > 1)
+                OpenDialogDeviceCmd.Execute(null);
+            else
+                Device = Devices.LastOrDefault();
         }
 
         private void AllSelectedChanged()
@@ -908,7 +941,7 @@ namespace TheVault.ViewModels
                 EditJson();
         }
 
-        private void StartServer()
+        private async void StartServer()
         {
             //TODO MUST WORK ON THIS
             if (AdbServer == null)
@@ -917,12 +950,14 @@ namespace TheVault.ViewModels
                 ProgressBarMax = 0;
                 ProgressBarValue = 0;
 
-                const string adbPath = @"C:\Users\axels\AppData\Local\Android\Sdk\platform-tools\adb.exe";
+                var adbPath = $@"C:\Users\{Environment.UserName}\AppData\Local\Android\Sdk\platform-tools\adb.exe";
                 if (!File.Exists(adbPath)) throw new FileNotFoundException("Error can't find adb.exe");
-                
-                AdbServer = new AdbServer();
-                AdbServer.StartServer(adbPath, false);
-                Console.WriteLine(AdbServer.GetStatus());
+                await Task.Run(() =>
+                {
+                    AdbServer = new AdbServer();
+                    AdbServer.StartServer(adbPath, false);
+                });
+                WriteLine(AdbServer.GetStatus().ToString());
                 
                 DeviceMonitor = new DeviceMonitor(new AdbSocket(new IPEndPoint(IPAddress.Loopback, AdbClient.AdbServerPort)));
                 DeviceMonitor.DeviceConnected += OnDeviceConnected;
@@ -932,11 +967,13 @@ namespace TheVault.ViewModels
             else
             {
                 ServerText = "START SERVER";
+                AdbClient.Instance.KillAdb();
                 AdbServer = null;
                 DeviceMonitor.Dispose();
                 DeviceMonitor = null;
+                WriteLine("AdbServer has been killed");
                 
-                Task.Delay(2500).ContinueWith(_ =>
+                await Task.Delay(2000).ContinueWith(_ =>
                 {
                     ServerMessage = "";
                     ProgressBarMax = 0;
@@ -944,65 +981,12 @@ namespace TheVault.ViewModels
                     ShowProgressBar = false;
                 });
             }
-            
-            /*if (SocketListener == null)
-            {
-                ServerText = "KILL SERVER";
-                ProgressBarMax = 0;
-                ProgressBarValue = 0;
-                SocketListener = new AsynchronousSocketListener 
-                    {SocketCallback = new RelayCommand(true, ServerCallback)};
-                ServerInstance = new Thread(SocketListener.StartListening);
-                ServerInstance.Start();
-            }
-            else
-            {
-                ServerText = "START SERVER";
-                SocketListener.IsStopped = true;
-                ServerInstance.Interrupt();
-                if (!ServerInstance.Join(2000))
-                    ServerInstance.Abort();
-
-                ServerInstance = null;
-                SocketListener = null;
-                Task.Delay(2500).ContinueWith(_ =>
-                {
-                    ServerMessage = "";
-                    ProgressBarMax = 0;
-                    ProgressBarValue = 0;
-                    ShowProgressBar = false;
-                });
-            }*/
-        }
-        
-        private void OnDeviceConnected(object sender, DeviceDataEventArgs e)
-        {
-            //TODO MUST WORK ON THIS
-            if (Devices != null && Devices == AdbClient.Instance.GetDevices()) return;
-            
-            Console.WriteLine($@"The device {e.Device.Serial} has connected to this PC");
-            Devices = AdbClient.Instance.GetDevices();
-            
-            Thread.Sleep(100);
-            if (Devices.Count > 1)
-                OpenDialogDeviceCmd.Execute(null);
-            else
-                Device = Devices.LastOrDefault();
         }
 
-        private void OnDeviceDisconnected(object sender, DeviceDataEventArgs e)
+        private void WriteLine(string message)
         {
-            //TODO MUST WORK ON THIS
-            Console.WriteLine($@"The device {e.Device.Serial} has disconnected from this PC");
-            Devices = AdbClient.Instance.GetDevices();
-
-            if (Devices.Count > 1)
-                OpenDialogDeviceCmd.Execute(null);
-            else
-            {
-                Device = Devices.LastOrDefault();
-                Console.WriteLine(Device == null ? $@"No device selected" : $@"Device selected : {Device.Model}");
-            }
+            Console.WriteLine(message);
+            ServerMessage = message;
         }
 
         private void ServerCallback(object info)
@@ -1040,9 +1024,25 @@ namespace TheVault.ViewModels
             var list = EncryptedFiles.Take(1);
             foreach (var file in list)
             {
-                SocketListener.Send(SocketListener.ClientSocket, 
-                    File.ReadAllBytes($"{DestinationPath}\\{file.FileName}"));
+                
             }*/
+        }
+
+        private void GetJson()
+        {
+            var receiver = new ConsoleOutputReceiver();
+            AdbClient.Instance.ExecuteRemoteCommand("ls -n /Android", Device, receiver);
+
+            Console.WriteLine("The device responded:");
+            Console.WriteLine(receiver.ToString());
+            
+            
+            //TODO !
+            using (var service = new SyncService(new AdbSocket(new IPEndPoint(IPAddress.Loopback, AdbClient.AdbServerPort)), Device))
+            using (var stream = File.OpenWrite(@"C:\Users\axels\Downloads\test.json"))
+            {
+                service.Pull("/data/local/tmp/wkzzsxq.tcyx", stream, null, CancellationToken.None);
+            }
         }
         
         #endregion //Private methods
