@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -661,6 +662,8 @@ namespace TheVault.ViewModels
                 OpenDialogDeviceCmd.Execute(null);
             else
                 Device = Devices.LastOrDefault();
+            
+            await Task.Delay(2000).ContinueWith(_ => { ServerMessage = ""; });
         }
 
         private async void OnDeviceDisconnected(object sender, DeviceDataEventArgs e)
@@ -673,6 +676,8 @@ namespace TheVault.ViewModels
                 OpenDialogDeviceCmd.Execute(null);
             else
                 Device = Devices.LastOrDefault();
+            
+            await Task.Delay(2000).ContinueWith(_ => { ServerMessage = ""; });
         }
 
         private void AllSelectedChanged()
@@ -941,110 +946,12 @@ namespace TheVault.ViewModels
                 EditJson();
         }
 
-        private async void StartServer()
-        {
-            //TODO MUST WORK ON THIS
-            if (AdbServer == null)
-            {
-                ServerText = "KILL SERVER";
-                ProgressBarMax = 0;
-                ProgressBarValue = 0;
-
-                var adbPath = $@"C:\Users\{Environment.UserName}\AppData\Local\Android\Sdk\platform-tools\adb.exe";
-                if (!File.Exists(adbPath)) throw new FileNotFoundException("Error can't find adb.exe");
-                await Task.Run(() =>
-                {
-                    AdbServer = new AdbServer();
-                    AdbServer.StartServer(adbPath, false);
-                });
-                WriteLine(AdbServer.GetStatus().ToString());
-                
-                DeviceMonitor = new DeviceMonitor(new AdbSocket(new IPEndPoint(IPAddress.Loopback, AdbClient.AdbServerPort)));
-                DeviceMonitor.DeviceConnected += OnDeviceConnected;
-                DeviceMonitor.DeviceDisconnected += OnDeviceDisconnected;
-                DeviceMonitor.Start();
-            }
-            else
-            {
-                ServerText = "START SERVER";
-                AdbClient.Instance.KillAdb();
-                AdbServer = null;
-                DeviceMonitor.Dispose();
-                DeviceMonitor = null;
-                WriteLine("AdbServer has been killed");
-                
-                await Task.Delay(2000).ContinueWith(_ =>
-                {
-                    ServerMessage = "";
-                    ProgressBarMax = 0;
-                    ProgressBarValue = 0;
-                    ShowProgressBar = false;
-                });
-            }
-        }
-
         private void WriteLine(string message)
         {
             Console.WriteLine(message);
             ServerMessage = message;
         }
 
-        private void ServerCallback(object info)
-        {
-            switch (info)
-            {
-                case string message:
-                    ServerMessage = message;
-                    break;
-                case long value:
-                    ProgressBarMax = Convert.ToInt32(value);
-                    ShowProgressBar = true;
-                    break;
-                case int value:
-                    ProgressBarValue = value;
-                    break;
-                case byte[] jsonBytes:
-                    DecryptDownloadedJson(jsonBytes);
-                    break;
-            }
-            
-            if (ServerMessage.Contains("Socket transfer is done"))
-                Task.Delay(2500).ContinueWith(_ =>
-                {
-                    ServerMessage = "";
-                    ProgressBarMax = 0;
-                    ProgressBarValue = 0;
-                    ShowProgressBar = false;
-                });
-        }
-
-        private void SendData()
-        {
-            /*//TODO implement sending files
-            var list = EncryptedFiles.Take(1);
-            foreach (var file in list)
-            {
-                
-            }*/
-        }
-
-        private void GetJson()
-        {
-            var receiver = new ConsoleOutputReceiver();
-            AdbClient.Instance.ExecuteRemoteCommand("ls -n /Android", Device, receiver);
-
-            Console.WriteLine("The device responded:");
-            Console.WriteLine(receiver.ToString());
-            
-            
-            //TODO !
-            using (var service = new SyncService(new AdbSocket(new IPEndPoint(IPAddress.Loopback, AdbClient.AdbServerPort)), Device))
-            using (var stream = File.OpenWrite(@"C:\Users\axels\Downloads\test.json"))
-            {
-                service.Pull("/data/local/tmp/wkzzsxq.tcyx", stream, null, CancellationToken.None);
-            }
-        }
-        
         #endregion //Private methods
 
         #region Async methods
@@ -1238,24 +1145,6 @@ namespace TheVault.ViewModels
                 GetDestinationFolder();
             });
         }
-
-        private async void DecryptDownloadedJson(byte[] jsonBytes)
-        {
-            await Task.Run(() =>
-            {
-                var destDir = new DirectoryInfo(DestinationPath);
-                var mFile = EncryptionUtil.DecryptBytes(jsonBytes, PassValue, SaltValue);
-                File.WriteAllBytes($"{destDir.FullName}\\mobileMapping.json", mFile);
-                DownloadedMapping = JsonConvert.DeserializeObject<List<FolderObject>>(File.ReadAllText($"{destDir.FullName}\\mobileMapping.json"));
-            }).ContinueWith(t =>
-            {
-                var destDir = new DirectoryInfo(DestinationPath);
-                if (!destDir.EnumerateFiles().Any() || destDir.EnumerateFiles().All(f => f.Name == "mobileMapping.json")) 
-                    return;
-                
-                EditJson();
-            });
-        }
         
         private async void EditJson()
         {
@@ -1296,6 +1185,160 @@ namespace TheVault.ViewModels
             }
         }
         
+        private async void GetJson()
+        {
+            if (Device == null)
+            {
+                WriteLine("The device cannot be null");
+                return;
+            }
+            
+            const string regex = @"[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}";
+            var sdCardNameReceiver = new ConsoleOutputReceiver();
+            AdbClient.Instance.ExecuteRemoteCommand("ls -n storage", Device, sdCardNameReceiver);
+            var sdCardName = Regex.Match(sdCardNameReceiver.ToString(), regex);
+            
+            var mappingFileReceiver = new ConsoleOutputReceiver();
+            var pathToJson = $"storage/{sdCardName}/Android/data/com.crmbl.thesafe/files/Download/.blob/wkzzsxq.tcyx";
+            AdbClient.Instance.ExecuteRemoteCommand($"find {pathToJson}", Device, mappingFileReceiver);
+            var hasMappingFile = !mappingFileReceiver.ToString().Contains("No such file or directory");
+
+            if (hasMappingFile)
+            {
+                ProgressBarMax = 100;
+                ProgressBarValue = 0;
+                ShowProgressBar = true;
+                var mobileJsonPath = $@"{DestinationPath}\mobileEncryptedJson.tcyx";
+                
+                WriteLine("Download json file from mobile");
+                await Task.Run(() =>
+                {
+                    var progress = new Progress<int>(value => { ProgressBarValue = value; });
+                    using (var service = new SyncService(new AdbSocket(new IPEndPoint(IPAddress.Loopback, AdbClient.AdbServerPort)), Device))
+                    using (var stream = File.OpenWrite(mobileJsonPath))
+                        service.Pull(pathToJson, stream, progress, CancellationToken.None);
+                });
+                WriteLine("Json downloaded");
+                await Task.Delay(2000).ContinueWith(_ =>
+                {
+                    ServerMessage = "";
+                    ShowProgressBar = false;
+                    ProgressBarMax = 0;
+                    ProgressBarValue = 0;
+                });
+                
+                var bytes = File.ReadAllBytes(mobileJsonPath);
+                File.Delete(mobileJsonPath);
+                await DecryptDownloadedJson(bytes);
+            }
+            else
+            {
+                WriteLine("No mapping.json on mobile phone");
+                await Task.Delay(2000).ContinueWith(_ => { ServerMessage = ""; });
+            }
+        }
+        
+        private async Task DecryptDownloadedJson(byte[] jsonBytes)
+        {
+            await Task.Run(() =>
+            {
+                var destDir = new DirectoryInfo(DestinationPath);
+                var mFile = EncryptionUtil.DecryptBytes(jsonBytes, PassValue, SaltValue);
+                File.WriteAllBytes($"{destDir.FullName}\\mobileMapping.json", mFile);
+                DownloadedMapping = JsonConvert.DeserializeObject<List<FolderObject>>(File.ReadAllText($"{destDir.FullName}\\mobileMapping.json"));
+            }).ContinueWith(t =>
+            {
+                var destDir = new DirectoryInfo(DestinationPath);
+                if (!destDir.EnumerateFiles().Any() || destDir.EnumerateFiles().All(f => f.Name == "mobileMapping.json")) 
+                    return;
+                
+                EditJson();
+            });
+        }
+                
+        private async void SendData()
+        {
+            var destDir = new DirectoryInfo(DestinationPath);
+            if (!destDir.EnumerateFiles().Any() || destDir.EnumerateFiles().All(f => f.Name == "mobileMapping.json"))
+            {
+                WriteLine("No file to upload, must have files in Destination folder");
+                return;
+            }
+            
+            const string regex = @"[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}";
+            var sdCardNameReceiver = new ConsoleOutputReceiver();
+            AdbClient.Instance.ExecuteRemoteCommand("ls -n storage", Device, sdCardNameReceiver);
+            var sdCardName = Regex.Match(sdCardNameReceiver.ToString(), regex);
+            var uploadPath = $"storage/{sdCardName}/Android/data/com.crmbl.thesafe/files/Download/.blob/";
+            
+            ProgressBarMax = EncryptedFiles.Count * 100;
+            ProgressBarValue = 0;
+            ShowProgressBar = true;
+            
+            for (var i = 0; i < EncryptedFiles.Count(); i++)
+            {
+                WriteLine($"{EncryptedFiles[i].FileName} is uploading");
+                await Task.Run(() =>
+                {
+                    var counter = i;
+                    var progress = new Progress<int>(value => { ProgressBarValue = value + 100*counter; });
+                    using (var service = new SyncService(new AdbSocket(new IPEndPoint(IPAddress.Loopback, AdbClient.AdbServerPort)), Device))
+                    using (var stream = File.OpenRead($"{DestinationPath}\\{EncryptedFiles[i].FileName}"))
+                        service.Push(stream, $"{uploadPath}{EncryptedFiles[i].FileName}", 666, DateTime.Now, progress, CancellationToken.None);
+                });
+            }
+
+            WriteLine("All files have been uploaded");
+            await Task.Delay(2000).ContinueWith(_ =>
+            {
+                ServerMessage = "";
+                ShowProgressBar = false;
+                ProgressBarMax = 0;
+                ProgressBarValue = 0;
+            });
+        }
+        
+        private async void StartServer()
+        {
+            if (AdbServer == null)
+            {
+                ServerText = "KILL SERVER";
+                ProgressBarMax = 0;
+                ProgressBarValue = 0;
+
+                var adbPath = $@"C:\Users\{Environment.UserName}\AppData\Local\Android\Sdk\platform-tools\adb.exe";
+                if (!File.Exists(adbPath)) throw new FileNotFoundException("Error can't find adb.exe");
+                await Task.Run(() =>
+                {
+                    AdbServer = new AdbServer();
+                    AdbServer.StartServer(adbPath, false);
+                });
+                WriteLine(AdbServer.GetStatus().ToString());
+                
+                DeviceMonitor = new DeviceMonitor(new AdbSocket(new IPEndPoint(IPAddress.Loopback, AdbClient.AdbServerPort)));
+                DeviceMonitor.DeviceConnected += OnDeviceConnected;
+                DeviceMonitor.DeviceDisconnected += OnDeviceDisconnected;
+                DeviceMonitor.Start();
+            }
+            else
+            {
+                ServerText = "START SERVER";
+                AdbClient.Instance.KillAdb();
+                AdbServer = null;
+                DeviceMonitor.Dispose();
+                DeviceMonitor = null;
+                WriteLine("AdbServer has been killed");
+                
+                await Task.Delay(2000).ContinueWith(_ =>
+                {
+                    ServerMessage = "";
+                    ProgressBarMax = 0;
+                    ProgressBarValue = 0;
+                    ShowProgressBar = false;
+                });
+            }
+        }
+
         #endregion //Async methods
     }
 }

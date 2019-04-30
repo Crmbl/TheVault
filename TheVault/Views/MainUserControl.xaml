@@ -380,8 +380,7 @@
                              Width="160"
                              Height="auto"
                              HorizontalAlignment="Left"
-                             SelectedItem="{Binding Device, Mode=TwoWay}"
-                             SelectedIndex="0">
+                             SelectedItem="{Binding Device, Mode=TwoWay}">
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel Orientation="Vertical" />

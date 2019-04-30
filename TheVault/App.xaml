@@ -87,8 +87,8 @@
 
         <Style x:Key="KillServer" TargetType="Button"
                BasedOn="{StaticResource MaterialDesignRaisedButton}">
-            <Setter Property="Background" Value="#EA2027" />
-            <Setter Property="BorderBrush" Value="#EA2027" />
+            <Setter Property="Background" Value="#6c5ce7" />
+            <Setter Property="BorderBrush" Value="#6c5ce7" />
             <Setter Property="Foreground" Value="#ffffff" />
             <Setter Property="Padding" Value="8,2"/>
             <Setter Property="TextBlock.FontSize" Value="12"/>
@@ -115,8 +115,8 @@
         
         <Style x:Key="JSonButton" TargetType="Button"
                BasedOn="{StaticResource SendButton}">
-            <Setter Property="Background" Value="#FD7272" />
-            <Setter Property="BorderBrush" Value="#FD7272" />
+            <Setter Property="Background" Value="#FC427B" />
+            <Setter Property="BorderBrush" Value="#FC427B" />
             <Setter Property="Foreground" Value="#ffffff" />
         </Style>
         
