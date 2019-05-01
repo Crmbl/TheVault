@@ -924,6 +924,7 @@ namespace TheVault.ViewModels
                 }
             }
 
+            ServerMessage = "GeneratingJson";
             GenerateJson(mapping, onClosing);
         }
 
@@ -1138,6 +1139,7 @@ namespace TheVault.ViewModels
             });
             await Task.Run(() =>
             {
+                ServerMessage = "GetMediaSize";
                 GetMediaSize(mapping);
             }).ContinueWith(_ =>
             {
