@@ -19,10 +19,13 @@ namespace TheVault.Views
             var viewModel = (LoginViewModel) DataContext;
             viewModel.ConnectCommand = new RelayCommand(true, _ => Connect());
 
-            //TODO TESTING EXTENSIONS
-            //FileUtil.GetFileExtensions(new DirectoryInfo("C:\\Users\\axels\\Downloads\\zzzFinal\\_DUMMY\\Test\\Another"),
-            //"C:\\Users\\axels\\Downloads\\extensions.txt");
-            //////////////////////
+            #if DEBUG
+            //Get extensions from files
+            var lines = System.IO.File.ReadAllLines($"{System.Environment.CurrentDirectory}\\settings");
+            var basePath = lines[0].EndsWith("\\") ? lines[0] : $"{lines[0]}\\";
+            var originPath = $"{basePath}{lines[1]}";
+            FileUtil.GetFileExtensions(new System.IO.DirectoryInfo(originPath), $"{basePath}extensions.txt");
+            #endif
         }
 
         private void Connect()
