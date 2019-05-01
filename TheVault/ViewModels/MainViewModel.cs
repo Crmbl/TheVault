@@ -524,9 +524,11 @@ namespace TheVault.ViewModels
                 Application.Current.MainWindow.Closing += OnClosing;
                 Application.Current.MainWindow.Closed += OnClosed;
                 
+                #if DEBUG
                 var left = (int)Math.Round(Application.Current.MainWindow.Left + Application.Current.MainWindow.Width);
                 var top = (int)Math.Round(Application.Current.MainWindow.Top);
                 ConsoleManager.Show(left, top);
+                #endif
             }
             
             Mapping = mapping ?? new List<FolderObject>();
@@ -930,6 +932,16 @@ namespace TheVault.ViewModels
 
         private void GenerateJson(List<FolderObject> mapping, bool onClosing = false)
         {
+            //Add empty folders forgotten when generating mapping
+            var list = new DirectoryInfo(OriginPath).EnumerateDirectories("*", SearchOption.AllDirectories)
+                .Select(f => new FolderObject(f.Name, f.FullName.Replace(BasePath, ""))).ToList();
+            foreach (var folder in list)
+            {
+                var diff = mapping.FirstOrDefault(fo => fo.name == folder.name && fo.fullPath == folder.fullPath);
+                if (diff == null)
+                    mapping.Add(folder);
+            }
+            
             var json = JsonConvert.SerializeObject(mapping, Formatting.Indented);
             var path = onClosing ? VaultPath : DestinationPath;
             var jsonFile = $"{path}\\{EncryptionUtil.Encipher("mapping.json", 10)}";
